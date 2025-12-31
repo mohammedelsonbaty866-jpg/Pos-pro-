@@ -1,160 +1,133 @@
-/****************************************
- * PosPro – app.js
- * Core Accounting Logic
- ****************************************/
+/*********************************
+ * PosPro - Core Application Logic
+ * Invoices / Purchases / Expenses
+ * Reports / Profit / Offline Sync
+ *********************************/
 
-import { auth } from "./firebase.js";
 import {
-  addData,
-  getData
+  addWithUID,
+  getUserDocs,
+  currentUser
 } from "./firebase.js";
 
-import { protectPage } from "./auth.js";
+import { logout } from "./auth.js";
 
-protectPage();
+/* ===============================
+   🔹 UI Helpers
+================================ */
+const $ = id => document.getElementById(id);
 
-/* =========================
-   State
-   ========================= */
-let currentUser = null;
-let invoices = [];
-let purchases = [];
-let expenses = [];
-let products = [];
+window.logout = logout;
 
-/* =========================
-   Helpers
-   ========================= */
-function $(id) {
-  return document.getElementById(id);
-}
+/* ===============================
+   🧾 Invoices
+================================ */
+export async function addInvoice(items, total, customer = "") {
+  if (!items.length) return alert("الفاتورة فارغة");
 
-function money(n) {
-  return Number(n || 0).toFixed(2);
-}
-
-/* =========================
-   Auth Ready
-   ========================= */
-auth.onAuthStateChanged(async user => {
-  if (!user) return;
-  currentUser = user;
-  await loadAll();
-});
-
-/* =========================
-   Load All Data
-   ========================= */
-async function loadAll() {
-  invoices = await getData(currentUser.uid, "invoices");
-  purchases = await getData(currentUser.uid, "purchases");
-  expenses = await getData(currentUser.uid, "expenses");
-  products = await getData(currentUser.uid, "products");
-
-  renderDashboard();
-}
-
-/* =========================
-   Dashboard
-   ========================= */
-function renderDashboard() {
-  const salesTotal = invoices.reduce((s, i) => s + i.total, 0);
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0);
-  const profit = salesTotal - expenseTotal;
-
-  if ($("dashSales")) $("dashSales").innerText = money(salesTotal);
-  if ($("dashExpenses")) $("dashExpenses").innerText = money(expenseTotal);
-  if ($("dashProfit")) $("dashProfit").innerText = money(profit);
-}
-
-/* =========================
-   Products
-   ========================= */
-export async function addProduct(name, price) {
-  await addData(currentUser.uid, "products", {
-    name,
-    price: Number(price)
+  await addWithUID("invoices", {
+    items,
+    total,
+    customer
   });
-  products = await getData(currentUser.uid, "products");
+
+  alert("✅ تم حفظ الفاتورة");
 }
 
-/* =========================
-   Invoices
-   ========================= */
-export async function createInvoice(items, customer) {
-  const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+export async function loadInvoices() {
+  const invoices = await getUserDocs("invoices");
+  const box = $("invoiceList");
+  if (!box) return;
 
-  await addData(currentUser.uid, "invoices", {
-    customer,
+  box.innerHTML = "";
+  invoices.forEach(i => {
+    box.innerHTML += `
+      <div class="card">
+        <b>فاتورة</b><br>
+        العميل: ${i.customer || "-"}<br>
+        الإجمالي: ${i.total}
+      </div>`;
+  });
+}
+
+/* ===============================
+   📦 Purchases
+================================ */
+export async function addPurchase(items, total) {
+  await addWithUID("purchases", {
     items,
     total
   });
-
-  invoices = await getData(currentUser.uid, "invoices");
-  renderDashboard();
+  alert("✅ تم حفظ المشتريات");
 }
 
-/* =========================
-   Purchases
-   ========================= */
-export async function addPurchase(items) {
-  const total = items.reduce((s, i) => s + i.qty * i.cost, 0);
-
-  await addData(currentUser.uid, "purchases", {
-    items,
-    total
-  });
-
-  purchases = await getData(currentUser.uid, "purchases");
-}
-
-/* =========================
-   Expenses
-   ========================= */
+/* ===============================
+   💸 Expenses
+================================ */
 export async function addExpense(type, amount, note = "") {
-  await addData(currentUser.uid, "expenses", {
+  if (!amount) return alert("أدخل المبلغ");
+
+  await addWithUID("expenses", {
     type,
-    amount: Number(amount),
+    amount,
     note
   });
 
-  expenses = await getData(currentUser.uid, "expenses");
-  renderDashboard();
+  alert("✅ تم حفظ المصروف");
 }
 
-/* =========================
-   Reports
-   ========================= */
-export function salesReport(from, to) {
-  return invoices.filter(i => {
-    const d = i.createdAt?.toDate?.() || new Date();
-    return (!from || d >= from) && (!to || d <= to);
+export async function loadExpenses() {
+  const expenses = await getUserDocs("expenses");
+  const box = $("expenseList");
+  if (!box) return;
+
+  box.innerHTML = "";
+  expenses.forEach(e => {
+    box.innerHTML += `
+      <div class="card">
+        ${e.type} - ${e.amount}
+      </div>`;
   });
 }
 
-export function profitReport(from, to) {
-  const sales = salesReport(from, to)
-    .reduce((s, i) => s + i.total, 0);
+/* ===============================
+   📊 Reports & Profit
+================================ */
+export async function showProfit(from = null, to = null) {
+  const invoices = await getUserDocs("invoices");
+  const expenses = await getUserDocs("expenses");
 
-  const exp = expenses.filter(e => {
-    const d = e.createdAt?.toDate?.() || new Date();
-    return (!from || d >= from) && (!to || d <= to);
-  }).reduce((s, e) => s + e.amount, 0);
+  let sales = 0;
+  let costs = 0;
 
-  return {
-    sales,
-    expenses: exp,
-    profit: sales - exp
-  };
+  invoices.forEach(i => sales += i.total);
+  expenses.forEach(e => costs += e.amount);
+
+  const net = sales - costs;
+
+  $("reportResult").innerHTML = `
+    <h3>📈 التقرير المالي</h3>
+    <p>إجمالي المبيعات: ${sales}</p>
+    <p>إجمالي المصروفات: ${costs}</p>
+    <h2>صافي الربح: ${net}</h2>
+  `;
 }
 
-/* =========================
-   Offline Indicator
-   ========================= */
+/* ===============================
+   📴 Offline Status
+================================ */
 window.addEventListener("offline", () => {
-  document.body.classList.add("offline");
+  console.warn("📴 Offline mode");
 });
 
 window.addEventListener("online", () => {
-  document.body.classList.remove("offline");
+  console.log("🔁 Syncing...");
+});
+
+/* ===============================
+   🚀 Init
+================================ */
+document.addEventListener("DOMContentLoaded", () => {
+  loadInvoices();
+  loadExpenses();
 });
