@@ -1,49 +1,46 @@
-import { auth, db } from './firebase.js';
+// auth.js
 import {
- createUserWithEmailAndPassword,
- signInWithEmailAndPassword,
- onAuthStateChanged
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { doc, getDoc, setDoc } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { auth, db } from "./firebase.js";
 
-export function initAuth(renderApp){
- onAuthStateChanged(auth, async user=>{
-  if(!user){
-   renderLogin();
-   return;
-  }
+// تسجيل حساب
+export async function register(email, password) {
+  const res = await createUserWithEmailAndPassword(auth, email, password);
 
-  const ref = doc(db,"users",user.uid);
-  const snap = await getDoc(ref);
-
-  if(!snap.exists()){
-   await setDoc(ref,{
-    uid:user.uid,
-    created:new Date(),
-    plan:"trial",
-    trialDays:14
-   });
-  }
-
-  renderApp(user);
- });
+  await setDoc(doc(db, "users", res.user.uid), {
+    uid: res.user.uid,
+    plan: "trial",
+    createdAt: Date.now(),
+    trialEnds: Date.now() + 14 * 24 * 60 * 60 * 1000
+  });
 }
 
-function renderLogin(){
- document.getElementById("root").innerHTML = `
- <div class="box">
-  <h3>تسجيل الدخول</h3>
-  <input id="email" placeholder="البريد الإلكتروني">
-  <input id="password" type="password" placeholder="كلمة المرور">
-  <button class="primary" id="login">دخول</button>
-  <button id="register">إنشاء حساب</button>
- </div>
- `;
- document.getElementById("login").onclick =
-  ()=>signInWithEmailAndPassword(auth,email.value,password.value);
+// تسجيل دخول
+export async function login(email, password) {
+  await signInWithEmailAndPassword(auth, email, password);
+}
 
- document.getElementById("register").onclick =
-  ()=>createUserWithEmailAndPassword(auth,email.value,password.value);
+// خروج
+export function logout() {
+  signOut(auth);
+}
+
+// فحص الاشتراك
+export async function checkSubscription(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return false;
+
+  const data = snap.data();
+  if (data.plan === "paid") return true;
+
+  return Date.now() < data.trialEnds;
 }
