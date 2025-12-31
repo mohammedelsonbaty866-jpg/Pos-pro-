@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Pos Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+
+<style>
+body{font-family:Tahoma;margin:0;background:#f4f6f8}
+header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
+nav{display:flex}
+nav button{flex:1;padding:10px;border:none;background:#eee}
+nav button.active{background:#0d6efd;color:#fff}
+.box{background:#fff;margin:15px;padding:15px;border-radius:6px}
+input,select,button{width:100%;padding:10px;margin-top:8px}
+button.primary{background:#0d6efd;color:#fff;border:none}
+.hidden{display:none}
+.overlay{
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.75);color:#fff;
+display:flex;align-items:center;justify-content:center;
+text-align:center;z-index:999
+}
+</style>
+</head>
+
+<body>
+
+<header>📊 Pos Pro</header>
+
+<div id="loginBox" class="box">
+<h3>تسجيل الدخول / إنشاء حساب</h3>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button onclick="login()">دخول</button>
+<button onclick="register()">تسجيل جديد</button>
+<p id="msg"></p>
+</div>
+
+<nav id="menu" class="hidden">
+<button class="active" onclick="show('sales',this)">المبيعات</button>
+<button onclick="show('stock',this)">المخزون</button>
+<button onclick="logout()">خروج</button>
+</nav>
+
+<div id="sales" class="box hidden">
+<h3>🧾 فاتورة بيع</h3>
+<select id="saleProduct"></select>
+<input id="saleQty" type="number" value="1">
+<button class="primary" onclick="addSale()">إضافة</button>
+<div id="invoice"></div>
+<p>الإجمالي: <b id="total">0</b></p>
+<button onclick="saveInvoice()">حفظ الفاتورة</button>
+</div>
+
+<div id="stock" class="box hidden">
+<h3>📦 المخزون</h3>
+<input id="pName" placeholder="اسم الصنف">
+<input id="pPrice" type="number" placeholder="السعر">
+<input id="pQty" type="number" placeholder="الكمية">
+<button onclick="addProduct()">إضافة</button>
+<div id="products"></div>
+</div>
+
+<div id="expired" class="overlay hidden">
+<div>
+<h2>انتهت فترة التجربة</h2>
+<p>برجاء تجديد الاشتراك</p>
+<a style="color:#25d366;font-size:20px"
+href="https://wa.me/201019936233?text=أرغب في تجديد اشتراك Pos Pro">
+تواصل عبر واتساب
+</a>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+firebase.initializeApp({
+ apiKey:"AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
+ authDomain:"pos-pro-996f0.firebaseapp.com",
+ projectId:"pos-pro-996f0"
+});
+
+const auth=firebase.auth();
+const db=firebase.firestore();
+
+let products=[],invoice=[];
+
+/* حسابات */
+function register(){
+ auth.createUserWithEmailAndPassword(email.value,password.value)
+ .then(r=>{
+  let d=new Date();d.setDate(d.getDate()+14);
+  db.collection("users").doc(r.user.uid).set({
+   email:r.user.email,
+   trialEnds:d,
+   subscription:"trial"
+  });
+ }).catch(e=>msg.innerText=e.message);
+}
+
+function login(){
+ auth.signInWithEmailAndPassword(email.value,password.value)
+ .catch(e=>msg.innerText=e.message);
+}
+
+function logout(){auth.signOut();}
+
+/* حالة المستخدم */
+auth.onAuthStateChanged(u=>{
+ if(!u){
+  loginBox.classList.remove("hidden");
+  menu.classList.add("hidden");
+  return;
+ }
+ loginBox.classList.add("hidden");
+ menu.classList.remove("hidden");
+
+ db.collection("users").doc(u.uid).get().then(s=>{
+  let d=s.data();
+  if(d.subscription!=="active" && d.trialEnds.toDate()<new Date()){
+   expired.classList.remove("hidden");
+  }
+ });
+ loadProducts();
+ show("sales");
+});
+
+/* التنقل */
+function show(id,b){
+ document.querySelectorAll(".box").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+ if(b) b.classList.add("active");
+}
+
+/* مخزون */
+function addProduct(){
+ products.push({name:pName.value,price:+pPrice.value,qty:+pQty.value});
+ localStorage.setItem("products",JSON.stringify(products));
+ renderProducts();loadSelect();
+}
+
+function renderProducts(){
+ productsDiv=products.map(p=>`<div>${p.name} | ${p.qty}</div>`).join("");
+ products.innerHTML=productsDiv;
+}
+
+function loadProducts(){
+ products=JSON.parse(localStorage.getItem("products")||"[]");
+ renderProducts();loadSelect();
+}
+
+function loadSelect(){
+ saleProduct.innerHTML="";
+ products.forEach((p,i)=>{
+  saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`;
+ });
+}
+
+/* مبيعات */
+function addSale(){
+ let p=products[saleProduct.value];
+ let q=+saleQty.value;
+ invoice.push({name:p.name,qty:q,total:p.price*q});
+ renderInvoice();
+}
+
+function renderInvoice(){
+ let t=0;invoiceDiv="";
+ invoice.forEach(i=>{
+  t+=i.total;
+  invoiceDiv+=`<div>${i.name} × ${i.qty}</div>`;
+ });
+ invoice.innerHTML=invoiceDiv;
+ total.innerText=t;
+}
+
+function saveInvoice(){
+ invoice.forEach(i=>{
+  let p=products.find(x=>x.name==i.name);
+  p.qty-=i.qty;
+ });
+ localStorage.setItem("products",JSON.stringify(products));
+ invoice=[];renderInvoice();renderProducts();
+ alert("تم حفظ الفاتورة");
+}
+</script>
+
+</body>
+</html>
