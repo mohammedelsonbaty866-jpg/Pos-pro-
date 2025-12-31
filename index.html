@@ -1,156 +1,108 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>PosPro — Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0d6efd" />
+  <meta charset="UTF-8">
+  <title>PosPro | برنامج محاسبي SaaS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon-192.png" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d6efd">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/app.css" />
-
-  <!-- Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Style -->
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
-  <!-- App Shell -->
-  <div id="app">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="brand">Pos<span>Pro</span></div>
-      <nav>
-        <button data-route="dashboard" class="active">الرئيسية</button>
-        <button data-route="sales">المبيعات</button>
-        <button data-route="purchases">المشتريات</button>
-        <button data-route="expenses">المصروفات</button>
-        <button data-route="reports">التقارير</button>
-        <button data-route="settings">الإعدادات</button>
-      </nav>
-      <div class="sidebar-footer">
-        <button id="logoutBtn" class="danger">تسجيل الخروج</button>
-      </div>
-    </aside>
+<header>
+  📊 PosPro — برنامج محاسبي احترافي
+</header>
 
-    <!-- Main -->
-    <main class="main">
-      <!-- Topbar -->
-      <header class="topbar">
-        <div>
-          <h1 id="pageTitle">الرئيسية</h1>
-          <p class="subtitle">لوحة تحكم SaaS — Offline + Sync</p>
-        </div>
-        <div class="user-box">
-          <span id="userEmail">—</span>
-        </div>
-      </header>
+<nav>
+  <button class="active" onclick="show('dashboard',this)">الرئيسية</button>
+  <button onclick="show('sales',this)">المبيعات</button>
+  <button onclick="show('purchases',this)">المشتريات</button>
+  <button onclick="show('expenses',this)">المصروفات</button>
+  <button onclick="show('reports',this)">التقارير</button>
+  <button onclick="logout()">خروج</button>
+</nav>
 
-      <!-- Views -->
-      <section id="view-dashboard" class="view active">
-        <div class="cards">
-          <div class="card">
-            <h3>إجمالي المبيعات</h3>
-            <p id="kpiSales">0</p>
-          </div>
-          <div class="card">
-            <h3>إجمالي المصروفات</h3>
-            <p id="kpiExpenses">0</p>
-          </div>
-          <div class="card highlight">
-            <h3>صافي الربح</h3>
-            <p id="kpiProfit">0</p>
-          </div>
-        </div>
-      </section>
+<div class="container">
 
-      <section id="view-sales" class="view">
-        <h2>فاتورة بيع</h2>
-        <div class="box">
-          <input id="saleCustomer" placeholder="اسم العميل (اختياري)" />
-          <input id="saleTotal" type="number" placeholder="إجمالي الفاتورة" />
-          <button class="primary" id="saveSaleBtn">حفظ الفاتورة</button>
-        </div>
-        <div id="salesList"></div>
-      </section>
-
-      <section id="view-purchases" class="view">
-        <h2>فاتورة شراء</h2>
-        <div class="box">
-          <input id="purchaseVendor" placeholder="المورد" />
-          <input id="purchaseTotal" type="number" placeholder="الإجمالي" />
-          <button class="primary" id="savePurchaseBtn">حفظ</button>
-        </div>
-        <div id="purchasesList"></div>
-      </section>
-
-      <section id="view-expenses" class="view">
-        <h2>المصروفات</h2>
-        <div class="box">
-          <input id="expenseDesc" placeholder="الوصف" />
-          <input id="expenseAmount" type="number" placeholder="المبلغ" />
-          <button class="primary" id="addExpenseBtn">إضافة</button>
-        </div>
-        <div id="expensesList"></div>
-      </section>
-
-      <section id="view-reports" class="view">
-        <h2>التقارير</h2>
-        <div class="box inline">
-          <input type="date" id="fromDate" />
-          <input type="date" id="toDate" />
-          <button id="runReportBtn">تشغيل التقرير</button>
-        </div>
-        <div id="reportResult"></div>
-      </section>
-
-      <section id="view-settings" class="view">
-        <h2>إعدادات الحساب</h2>
-        <div class="box">
-          <input id="profileName" placeholder="اسم النشاط" />
-          <input id="profilePhone" placeholder="رقم الهاتف" />
-          <button class="primary" id="saveProfileBtn">حفظ</button>
-        </div>
-      </section>
-
-    </main>
+  <!-- Dashboard -->
+  <div id="dashboard" class="box">
+    <h3>مرحبًا بك 👋</h3>
+    <p>برنامج محاسبي يعمل بدون إنترنت ويدعم SaaS</p>
+    <span class="badge trial">حالة الاشتراك: تجريبي</span>
   </div>
 
-  <!-- App Scripts -->
-  <script type="module">
-    // Router (UI only)
-    const buttons = document.querySelectorAll('[data-route]');
-    const views = document.querySelectorAll('.view');
-    const title = document.getElementById('pageTitle');
+  <!-- Sales -->
+  <div id="sales" class="box" style="display:none">
+    <h3>🧾 فاتورة بيع</h3>
+    <input id="saleCustomer" placeholder="اسم العميل">
+    <input id="saleTotal" type="number" placeholder="الإجمالي">
+    <button class="primary" onclick="saveInvoice()">💾 حفظ الفاتورة</button>
 
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const route = btn.dataset.route;
-        views.forEach(v => v.classList.remove('active'));
-        document.getElementById('view-' + route).classList.add('active');
-        title.textContent = btn.textContent;
-      });
-    });
+    <hr>
+    <div id="invoiceList"></div>
+  </div>
 
-    // Guard placeholder (يُستكمل في auth.js)
-    import { guard, logout, currentUserEmail } from './js/auth.js';
-    guard();
+  <!-- Purchases -->
+  <div id="purchases" class="box" style="display:none">
+    <h3>📦 المشتريات</h3>
+    <input id="purchaseTotal" type="number" placeholder="إجمالي الشراء">
+    <button class="primary" onclick="savePurchase()">💾 حفظ</button>
+  </div>
 
-    document.getElementById('logoutBtn').onclick = logout;
-    currentUserEmail().then(e => {
-      document.getElementById('userEmail').textContent = e || '';
-    });
+  <!-- Expenses -->
+  <div id="expenses" class="box" style="display:none">
+    <h3>💸 المصروفات</h3>
+    <select id="expenseType">
+      <option>إيجار</option>
+      <option>كهرباء</option>
+      <option>مياه</option>
+      <option>رواتب</option>
+      <option>أخرى</option>
+    </select>
+    <input id="expenseAmount" type="number" placeholder="المبلغ">
+    <button class="primary" onclick="saveExpense()">➕ إضافة</button>
 
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  </script>
+    <div id="expenseList"></div>
+  </div>
+
+  <!-- Reports -->
+  <div id="reports" class="box" style="display:none">
+    <h3>📊 التقارير</h3>
+    <button onclick="showProfit()">📈 صافي الربح</button>
+    <div id="reportResult"></div>
+  </div>
+
+</div>
+
+<footer>
+  PosPro © 2025 — SaaS Accounting System
+</footer>
+
+<!-- Scripts -->
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/auth.js"></script>
+<script type="module" src="js/app.js"></script>
+
+<script>
+function show(id, btn){
+  document.querySelectorAll('.box').forEach(b=>b.style.display='none');
+  document.getElementById(id).style.display='block';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
 </body>
 </html>
