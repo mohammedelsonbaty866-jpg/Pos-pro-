@@ -5,23 +5,26 @@
 <title>Pos Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
 body{font-family:Tahoma;background:#f4f6f8;margin:0}
-header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
+header{background:#0d6efd;color:#fff;padding:15px;text-align:center;font-size:20px}
 .box{background:#fff;margin:10px;padding:15px;border-radius:6px}
-input,button{width:100%;padding:10px;margin-top:5px}
+input,button{width:100%;padding:10px;margin-top:6px;font-size:15px}
 button.primary{background:#0d6efd;color:#fff;border:none}
 button.red{background:#dc3545;color:#fff;border:none}
 .hidden{display:none}
+hr{margin:15px 0}
 </style>
 </head>
+
 <body>
 
-<header>📊 Pos Pro</header>
+<header>📊 Pos Pro – برنامج محاسبي سحابي</header>
 
 <!-- AUTH -->
 <div class="box" id="authBox">
@@ -29,7 +32,7 @@ button.red{background:#dc3545;color:#fff;border:none}
 <input id="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
 <button class="primary" onclick="login()">دخول</button>
-<button onclick="register()">إنشاء حساب</button>
+<button onclick="register()">إنشاء حساب جديد</button>
 <p id="authMsg"></p>
 </div>
 
@@ -41,22 +44,22 @@ button.red{background:#dc3545;color:#fff;border:none}
 <button class="red" onclick="logout()">تسجيل خروج</button>
 </div>
 
-<!-- SALES -->
+<!-- INVOICE -->
 <div class="box">
-<h4>🧾 فاتورة جديدة</h4>
-<input id="saleTotal" type="number" placeholder="إجمالي الفاتورة">
-<button class="primary" onclick="saveSale()">حفظ الفاتورة</button>
+<h4>🧾 فاتورة بيع</h4>
+<input id="invoiceTotal" type="number" placeholder="إجمالي الفاتورة">
+<button class="primary" onclick="saveInvoice()">حفظ الفاتورة</button>
 </div>
 
-<!-- EXPENSES -->
+<!-- EXPENSE -->
 <div class="box">
-<h4>💸 مصروف جديد</h4>
-<input id="expenseAmount" type="number" placeholder="قيمة المصروف">
-<input id="expenseNote" placeholder="ملاحظة">
+<h4>💸 مصروف</h4>
+<input id="expenseAmount" type="number" placeholder="المبلغ">
+<input id="expenseNote" placeholder="الوصف">
 <button class="primary" onclick="saveExpense()">حفظ المصروف</button>
 </div>
 
-<!-- INVOICES -->
+<!-- INVOICES LIST -->
 <div class="box">
 <h4>📄 الفواتير</h4>
 <div id="invoiceList"></div>
@@ -73,27 +76,19 @@ button.red{background:#dc3545;color:#fff;border:none}
 </div>
 
 <script>
-/* FIREBASE */
+/* Firebase Config (غيّرها) */
 const firebaseConfig={
   apiKey:"YOUR_API_KEY",
   authDomain:"YOUR_PROJECT.firebaseapp.com",
-  projectId:"YOUR_PROJECT"
+  projectId:"YOUR_PROJECT_ID"
 };
 firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth();
 
-/* OFFLINE DB */
-let db;
-const req=indexedDB.open("PosProDB",1);
-req.onupgradeneeded=e=>{
-  db=e.target.result;
-  db.createObjectStore("sales",{keyPath:"id"});
-  db.createObjectStore("expenses",{keyPath:"id"});
-};
-req.onsuccess=e=>db=e.target.result;
+const auth=firebase.auth();
+const db=firebase.firestore();
+let currentUser=null;
 
 /* AUTH */
-let currentUser=null;
 auth.onAuthStateChanged(user=>{
   if(user){
     currentUser=user;
@@ -108,76 +103,83 @@ function register(){
   auth.createUserWithEmailAndPassword(email.value,password.value)
   .catch(e=>authMsg.innerText=e.message);
 }
+
 function login(){
   auth.signInWithEmailAndPassword(email.value,password.value)
   .catch(e=>authMsg.innerText=e.message);
 }
+
 function logout(){
-  auth.signOut();location.reload();
+  auth.signOut();
+  location.reload();
 }
 
-/* SALES */
-function saveSale(){
-  const invoice={
-    id:Date.now(),
+/* SAVE INVOICE */
+function saveInvoice(){
+  const total=+invoiceTotal.value;
+  if(!total) return;
+
+  db.collection("invoices").add({
     uid:currentUser.uid,
     number:"INV-"+Date.now(),
-    total:+saleTotal.value,
-    date:new Date().toISOString()
-  };
-  const tx=db.transaction("sales","readwrite");
-  tx.objectStore("sales").add(invoice);
-  saleTotal.value="";
-  loadInvoices();
-  status.innerText="تم حفظ الفاتورة ✅";
+    total:total,
+    date:new Date()
+  }).then(()=>{
+    invoiceTotal.value="";
+    loadInvoices();
+    status.innerText="✅ تم حفظ الفاتورة";
+  });
 }
 
-/* EXPENSES */
+/* SAVE EXPENSE */
 function saveExpense(){
-  const exp={
-    id:Date.now(),
+  const amount=+expenseAmount.value;
+  if(!amount) return;
+
+  db.collection("expenses").add({
     uid:currentUser.uid,
-    amount:+expenseAmount.value,
+    amount:amount,
     note:expenseNote.value,
-    date:new Date().toISOString()
-  };
-  const tx=db.transaction("expenses","readwrite");
-  tx.objectStore("expenses").add(exp);
-  expenseAmount.value="";
-  expenseNote.value="";
-  status.innerText="تم حفظ المصروف ✅";
+    date:new Date()
+  }).then(()=>{
+    expenseAmount.value="";
+    expenseNote.value="";
+    status.innerText="✅ تم حفظ المصروف";
+  });
 }
 
 /* LOAD INVOICES */
 function loadInvoices(){
-  const tx=db.transaction("sales","readonly");
-  tx.objectStore("sales").getAll().onsuccess=e=>{
-    invoiceList.innerHTML="";
-    e.target.result.filter(i=>i.uid===currentUser.uid)
-    .forEach(i=>{
+  invoiceList.innerHTML="";
+  db.collection("invoices")
+  .where("uid","==",currentUser.uid)
+  .orderBy("date","desc")
+  .get()
+  .then(snap=>{
+    snap.forEach(doc=>{
+      const i=doc.data();
       invoiceList.innerHTML+=`
       <div class="box">
-        ${i.number}<br>
-        ${new Date(i.date).toLocaleString("ar-EG")}<br>
-        الإجمالي: ${i.total} ج
-        <button onclick="printInvoice('${i.number}',${i.total})">🖨️ طباعة</button>
+      ${i.number}<br>
+      ${i.date.toDate().toLocaleString("ar-EG")}<br>
+      الإجمالي: ${i.total} ج
+      <button onclick="printInvoice('${i.number}',${i.total})">🖨️ طباعة</button>
       </div>`;
     });
-  };
+  });
 }
 
 /* REPORT */
 function generateReport(){
   let sales=0,expenses=0;
-  db.transaction("sales","readonly").objectStore("sales")
-  .getAll().onsuccess=e=>{
-    e.target.result.filter(i=>i.uid===currentUser.uid)
-    .forEach(i=>sales+=i.total);
 
-    db.transaction("expenses","readonly").objectStore("expenses")
-    .getAll().onsuccess=x=>{
-      x.target.result.filter(i=>i.uid===currentUser.uid)
-      .forEach(i=>expenses+=i.amount);
+  db.collection("invoices").where("uid","==",currentUser.uid).get()
+  .then(s=>{
+    s.forEach(d=>sales+=d.data().total);
+
+    db.collection("expenses").where("uid","==",currentUser.uid).get()
+    .then(e=>{
+      e.forEach(d=>expenses+=d.data().amount);
 
       reportBox.innerHTML=`
       <div class="box">
@@ -185,8 +187,8 @@ function generateReport(){
       إجمالي المصروفات: ${expenses} ج<br>
       <b>صافي الربح: ${sales-expenses} ج</b>
       </div>`;
-    };
-  };
+    });
+  });
 }
 
 /* PRINT */
