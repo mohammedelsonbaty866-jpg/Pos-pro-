@@ -1,29 +1,340 @@
-body{
-  font-family:Tahom,aArial;
-  background:#f4f6f8;
-  margin:0;
+/* =========================
+   PosPro SaaS UI – app.css
+   ========================= */
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
-nav{
-  background:#0d6efd;
-  display:flex;
+
+:root {
+  --primary: #0d6efd;
+  --primary-dark: #0b5ed7;
+  --bg: #f4f6f8;
+  --bg-soft: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --danger: #dc3545;
+  --success: #198754;
+  --border: #e5e7eb;
+  --radius: 10px;
+  --shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
-nav button{
-  flex:1;
-  padding:12px;
-  border:none;
-  background:none;
-  color:#fff;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Tajawal', Tahoma, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
 }
-section{
-  padding:20px;
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
 }
-input,button{
-  width:100%;
-  padding:10px;
-  margin:5px 0;
+
+input, select {
+  font-family: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
 }
-button{
-  background:#0d6efd;
-  color:#fff;
-  border:none;
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+button.primary {
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+button.primary:hover {
+  background: var(--primary-dark);
+}
+
+button.danger {
+  background: var(--danger);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+}
+
+button.secondary {
+  background: #e9ecef;
+  color: #000;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+}
+
+/* =========================
+   Layout – App Shell
+   ========================= */
+#app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: var(--bg-soft);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--primary);
+}
+
+.brand span {
+  color: var(--text);
+}
+
+.brand.large {
+  text-align: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.sidebar nav {
+  flex: 1;
+}
+
+.sidebar nav button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  text-align: right;
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.sidebar nav button.active,
+.sidebar nav button:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+/* =========================
+   Main Area
+   ========================= */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar */
+.topbar {
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.user-box {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* =========================
+   Views
+   ========================= */
+.view {
+  display: none;
+  padding: 20px;
+}
+
+.view.active {
+  display: block;
+}
+
+.box {
+  background: var(--bg-soft);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.box.inline {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* =========================
+   Dashboard Cards
+   ========================= */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-soft);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.card p {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.card.highlight {
+  background: var(--primary);
+  color: #fff;
+}
+
+.card.highlight h3 {
+  color: #e9ecef;
+}
+
+/* =========================
+   Auth Pages
+   ========================= */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 380px;
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--bg-soft);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.tabs button {
+  flex: 1;
+  background: #e9ecef;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.tabs button.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.form {
+  display: none;
+}
+
+.form.active {
+  display: block;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.message {
+  margin-top: 10px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--danger);
+}
+
+/* =========================
+   Lists (Invoices, Expenses)
+   ========================= */
+.list-item {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+@media (max-width: 768px) {
+  #app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .sidebar nav {
+    display: flex;
+    gap: 6px;
+  }
+
+  .sidebar nav button {
+    white-space: nowrap;
+  }
 }
