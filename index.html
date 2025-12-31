@@ -1,99 +1,41 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>PosPro | برنامج محاسبي SaaS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Style -->
-  <link rel="stylesheet" href="css/app.css">
-
+<meta charset="UTF-8">
+<title>Pos Pro</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
-<header>
-  PosPro – برنامج محاسبي احترافي
-  <button onclick="logout()" style="float:left">خروج</button>
-</header>
+<div id="login">
+  <input id="email" placeholder="البريد">
+  <input id="pass" type="password" placeholder="كلمة المرور">
+  <button onclick="doLogin()">دخول</button>
+</div>
 
-<main class="container">
+<div id="app" hidden>
+  <button onclick="logout()">خروج</button>
+  <h3>نظام محاسبي SaaS</h3>
+</div>
 
-  <!-- بيع -->
-  <div class="card">
-    <h3>فاتورة بيع</h3>
-    <input id="invCustomer" placeholder="اسم العميل">
-    <input id="invTotal" type="number" placeholder="الإجمالي">
-    <button onclick="saveInvoiceUI()">حفظ الفاتورة</button>
-  </div>
-
-  <!-- مصروفات -->
-  <div class="card">
-    <h3>مصروفات</h3>
-    <input id="expName" placeholder="الوصف">
-    <input id="expAmount" type="number" placeholder="المبلغ">
-    <button onclick="saveExpenseUI()">حفظ المصروف</button>
-  </div>
-
-  <!-- تقارير -->
-  <div class="card">
-    <h3>تقارير</h3>
-    <input type="date" id="fromDate">
-    <input type="date" id="toDate">
-    <button onclick="loadProfit()">حساب صافي الربح</button>
-    <h4 id="profitResult"></h4>
-  </div>
-
-</main>
-
-<!-- ======================
-     JS MODULES
-====================== -->
 <script type="module">
-  import { logout } from "./js/auth.js";
-  import {
-    saveInvoice,
-    addExpense,
-    calculateProfit
-  } from "./js/app.js";
+import { login, logout, watch } from "./js/auth.js";
 
-  window.logout = logout;
+window.doLogin=()=>login(email.value,pass.value);
+window.logout=logout;
 
-  window.saveInvoiceUI = async () => {
-    await saveInvoice({
-      customer: invCustomer.value,
-      total: Number(invTotal.value)
-    });
-    alert("تم حفظ الفاتورة");
-    invCustomer.value = invTotal.value = "";
-  };
-
-  window.saveExpenseUI = async () => {
-    await addExpense({
-      name: expName.value,
-      amount: Number(expAmount.value)
-    });
-    alert("تم حفظ المصروف");
-    expName.value = expAmount.value = "";
-  };
-
-  window.loadProfit = async () => {
-    const profit = await calculateProfit(
-      new Date(fromDate.value),
-      new Date(toDate.value)
-    );
-    profitResult.innerText = "صافي الربح: " + profit;
-  };
+watch(u=>{
+  login.hidden=!!u;
+  app.hidden=!u;
+});
 </script>
 
-<!-- Service Worker -->
 <script>
-if ("serviceWorker" in navigator) {
+if("serviceWorker" in navigator){
   navigator.serviceWorker.register("service-worker.js");
 }
 </script>
-
 </body>
 </html>
