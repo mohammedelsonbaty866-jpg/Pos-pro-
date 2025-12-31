@@ -5,13 +5,13 @@
 <title>Admin - Pos Pro</title>
 <style>
 body{font-family:Tahoma;background:#f4f6f8}
-.box{background:#fff;margin:15px;padding:15px}
+.box{background:#fff;padding:15px;margin:10px}
 button{padding:6px}
 </style>
 </head>
 <body>
 
-<h2>لوحة تحكم الأدمن</h2>
+<h2>لوحة تحكم Pos Pro</h2>
 <div id="users"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -23,24 +23,22 @@ firebase.initializeApp({
  authDomain:"pos-pro-996f0.firebaseapp.com",
  projectId:"pos-pro-996f0"
 });
-
 const db=firebase.firestore();
 
 db.collection("users").onSnapshot(s=>{
  users.innerHTML="";
  s.forEach(d=>{
-  const u=d.data();
+  let u=d.data();
   users.innerHTML+=`
-   <div class="box">
-    ${u.email}
-    <button onclick="activate('${d.id}')">تفعيل</button>
-   </div>`;
+  <div class="box">
+   ${u.email} - ${u.sub}
+   <button onclick="activate('${d.id}')">تفعيل</button>
+  </div>`;
  });
 });
 
 function activate(id){
- db.collection("users").doc(id).update({active:true});
- alert("تم التفعيل");
+ db.collection("users").doc(id).update({sub:"active"});
 }
 </script>
 
