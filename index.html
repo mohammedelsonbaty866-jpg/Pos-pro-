@@ -1,62 +1,156 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>Pos Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="css/app.css">
+  <meta charset="UTF-8" />
+  <title>PosPro — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d6efd" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/app.css" />
+
+  <!-- Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+  <!-- App Shell -->
+  <div id="app">
 
-<div id="auth">
-  <h2>تسجيل الدخول</h2>
-  <input id="email" placeholder="البريد الإلكتروني">
-  <input id="password" type="password" placeholder="كلمة المرور">
-  <button onclick="login()">دخول</button>
-</div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">Pos<span>Pro</span></div>
+      <nav>
+        <button data-route="dashboard" class="active">الرئيسية</button>
+        <button data-route="sales">المبيعات</button>
+        <button data-route="purchases">المشتريات</button>
+        <button data-route="expenses">المصروفات</button>
+        <button data-route="reports">التقارير</button>
+        <button data-route="settings">الإعدادات</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="danger">تسجيل الخروج</button>
+      </div>
+    </aside>
 
-<div id="app" style="display:none">
-  <nav>
-    <button onclick="show('sales')">المبيعات</button>
-    <button onclick="show('purchases')">المشتريات</button>
-    <button onclick="show('expenses')">المصروفات</button>
-    <button onclick="show('reports')">التقارير</button>
-    <button onclick="logout()">خروج</button>
-  </nav>
+    <!-- Main -->
+    <main class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">الرئيسية</h1>
+          <p class="subtitle">لوحة تحكم SaaS — Offline + Sync</p>
+        </div>
+        <div class="user-box">
+          <span id="userEmail">—</span>
+        </div>
+      </header>
 
-  <section id="sales">صفحة البيع</section>
-  <section id="purchases" hidden>المشتريات</section>
-  <section id="expenses" hidden>المصروفات</section>
-  <section id="reports" hidden>التقارير</section>
-</div>
+      <!-- Views -->
+      <section id="view-dashboard" class="view active">
+        <div class="cards">
+          <div class="card">
+            <h3>إجمالي المبيعات</h3>
+            <p id="kpiSales">0</p>
+          </div>
+          <div class="card">
+            <h3>إجمالي المصروفات</h3>
+            <p id="kpiExpenses">0</p>
+          </div>
+          <div class="card highlight">
+            <h3>صافي الربح</h3>
+            <p id="kpiProfit">0</p>
+          </div>
+        </div>
+      </section>
 
-<script type="module">
-import { login, logout } from "./js/auth.js";
-import { watchAuth } from "./js/firebase.js";
+      <section id="view-sales" class="view">
+        <h2>فاتورة بيع</h2>
+        <div class="box">
+          <input id="saleCustomer" placeholder="اسم العميل (اختياري)" />
+          <input id="saleTotal" type="number" placeholder="إجمالي الفاتورة" />
+          <button class="primary" id="saveSaleBtn">حفظ الفاتورة</button>
+        </div>
+        <div id="salesList"></div>
+      </section>
 
-window.login = () =>
-  login(email.value, password.value);
+      <section id="view-purchases" class="view">
+        <h2>فاتورة شراء</h2>
+        <div class="box">
+          <input id="purchaseVendor" placeholder="المورد" />
+          <input id="purchaseTotal" type="number" placeholder="الإجمالي" />
+          <button class="primary" id="savePurchaseBtn">حفظ</button>
+        </div>
+        <div id="purchasesList"></div>
+      </section>
 
-window.logout = logout;
+      <section id="view-expenses" class="view">
+        <h2>المصروفات</h2>
+        <div class="box">
+          <input id="expenseDesc" placeholder="الوصف" />
+          <input id="expenseAmount" type="number" placeholder="المبلغ" />
+          <button class="primary" id="addExpenseBtn">إضافة</button>
+        </div>
+        <div id="expensesList"></div>
+      </section>
 
-window.show = id => {
-  document.querySelectorAll("section").forEach(s=>s.hidden=true);
-  document.getElementById(id).hidden=false;
-};
+      <section id="view-reports" class="view">
+        <h2>التقارير</h2>
+        <div class="box inline">
+          <input type="date" id="fromDate" />
+          <input type="date" id="toDate" />
+          <button id="runReportBtn">تشغيل التقرير</button>
+        </div>
+        <div id="reportResult"></div>
+      </section>
 
-watchAuth(u => {
-  auth.style.display = u ? "none" : "block";
-  app.style.display = u ? "block" : "none";
-});
-</script>
+      <section id="view-settings" class="view">
+        <h2>إعدادات الحساب</h2>
+        <div class="box">
+          <input id="profileName" placeholder="اسم النشاط" />
+          <input id="profilePhone" placeholder="رقم الهاتف" />
+          <button class="primary" id="saveProfileBtn">حفظ</button>
+        </div>
+      </section>
 
-<script>
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>
+    </main>
+  </div>
 
+  <!-- App Scripts -->
+  <script type="module">
+    // Router (UI only)
+    const buttons = document.querySelectorAll('[data-route]');
+    const views = document.querySelectorAll('.view');
+    const title = document.getElementById('pageTitle');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const route = btn.dataset.route;
+        views.forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + route).classList.add('active');
+        title.textContent = btn.textContent;
+      });
+    });
+
+    // Guard placeholder (يُستكمل في auth.js)
+    import { guard, logout, currentUserEmail } from './js/auth.js';
+    guard();
+
+    document.getElementById('logoutBtn').onclick = logout;
+    currentUserEmail().then(e => {
+      document.getElementById('userEmail').textContent = e || '';
+    });
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
 </body>
 </html>
