@@ -1,103 +1,106 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>PosPro — تسجيل الدخول</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0d6efd" />
+  <meta charset="UTF-8">
+  <title>PosPro | تسجيل الدخول</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/app.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    body {
+      background: linear-gradient(135deg,#0d6efd,#0b5ed7);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+    .auth-box {
+      background:#fff;
+      padding:30px;
+      width:100%;
+      max-width:380px;
+      border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
+      text-align:center;
+    }
+    .auth-box h2 { margin-bottom:20px }
+    .auth-box input {
+      width:100%;
+      padding:12px;
+      margin-bottom:12px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:15px;
+    }
+    .auth-box button {
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:8px;
+      font-size:16px;
+      cursor:pointer;
+      background:#0d6efd;
+      color:#fff;
+    }
+    .auth-box .switch {
+      margin-top:15px;
+      font-size:14px;
+      cursor:pointer;
+      color:#0d6efd;
+    }
+  </style>
 </head>
 
-<body class="auth-page">
+<body>
 
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="brand large">Pos<span>Pro</span></div>
+<div class="auth-box">
+  <h2 id="title">تسجيل الدخول</h2>
 
-      <!-- Tabs -->
-      <div class="tabs">
-        <button id="tabLogin" class="active">تسجيل الدخول</button>
-        <button id="tabRegister">إنشاء حساب</button>
-      </div>
+  <input type="email" id="email" placeholder="البريد الإلكتروني">
+  <input type="password" id="password" placeholder="كلمة المرور">
 
-      <!-- Login -->
-      <form id="loginForm" class="form active">
-        <input id="loginEmail" type="email" placeholder="البريد الإلكتروني" required />
-        <input id="loginPassword" type="password" placeholder="كلمة المرور" required />
-        <button type="submit" class="primary">دخول</button>
-        <p class="hint">🔒 كلمة المرور لا تُخزن محليًا</p>
-      </form>
+  <button onclick="submit()">دخول</button>
 
-      <!-- Register -->
-      <form id="registerForm" class="form">
-        <input id="registerEmail" type="email" placeholder="البريد الإلكتروني" required />
-        <input id="registerPassword" type="password" placeholder="كلمة المرور" required />
-        <button type="submit" class="primary">إنشاء الحساب</button>
-        <p class="hint">تجربة مجانية 14 يوم</p>
-      </form>
-
-      <div id="authMessage" class="message"></div>
-    </div>
+  <div class="switch" onclick="toggle()">
+    إنشاء حساب جديد
   </div>
+</div>
 
-  <script type="module">
-    import { login, register, redirectIfLoggedIn } from './js/auth.js';
+<script type="module">
+import { auth, signIn, signUp } from './js/auth.js';
 
-    redirectIfLoggedIn();
+let mode = "login";
 
-    const tabLogin = document.getElementById('tabLogin');
-    const tabRegister = document.getElementById('tabRegister');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const msg = document.getElementById('authMessage');
+window.toggle = function(){
+  mode = mode === "login" ? "signup" : "login";
+  document.getElementById("title").innerText =
+    mode === "login" ? "تسجيل الدخول" : "إنشاء حساب";
+  document.querySelector("button").innerText =
+    mode === "login" ? "دخول" : "تسجيل";
+  document.querySelector(".switch").innerText =
+    mode === "login" ? "إنشاء حساب جديد" : "لديك حساب؟ تسجيل الدخول";
+};
 
-    tabLogin.onclick = () => {
-      tabLogin.classList.add('active');
-      tabRegister.classList.remove('active');
-      loginForm.classList.add('active');
-      registerForm.classList.remove('active');
-      msg.textContent = '';
-    };
+window.submit = async function(){
+  const email = emailInput.value;
+  const pass  = password.value;
 
-    tabRegister.onclick = () => {
-      tabRegister.classList.add('active');
-      tabLogin.classList.remove('active');
-      registerForm.classList.add('active');
-      loginForm.classList.remove('active');
-      msg.textContent = '';
-    };
+  if(!email || !pass) return alert("أدخل البيانات");
 
-    loginForm.onsubmit = async e => {
-      e.preventDefault();
-      msg.textContent = 'جارٍ تسجيل الدخول...';
-      try {
-        await login(
-          loginEmail.value,
-          loginPassword.value
-        );
-        location.href = 'index.html';
-      } catch (err) {
-        msg.textContent = err.message;
-      }
-    };
-
-    registerForm.onsubmit = async e => {
-      e.preventDefault();
-      msg.textContent = 'جارٍ إنشاء الحساب...';
-      try {
-        await register(
-          registerEmail.value,
-          registerPassword.value
-        );
-        location.href = 'index.html';
-      } catch (err) {
-        msg.textContent = err.message;
-      }
-    };
-  </script>
+  try {
+    if(mode === "login"){
+      await signIn(email, pass);
+    } else {
+      await signUp(email, pass);
+    }
+    location.href = "index.html";
+  } catch(e){
+    alert("خطأ: " + e.message);
+  }
+};
+</script>
 
 </body>
 </html>
