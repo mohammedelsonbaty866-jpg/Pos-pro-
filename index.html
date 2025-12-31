@@ -4,22 +4,25 @@
 <meta charset="UTF-8">
 <title>Pos Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 body{font-family:Tahoma;margin:0;background:#f4f6f8}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
-.box{background:#fff;margin:15px;padding:15px;border-radius:6px}
-input,select,button{width:100%;padding:10px;margin-top:10px}
-button{background:#0d6efd;color:#fff;border:none;border-radius:4px}
-nav button{background:#eee;color:#000;margin:3px}
+nav{display:flex;background:#fff}
+nav button{flex:1;padding:10px;border:none;background:none}
 nav button.active{background:#0d6efd;color:#fff}
+.box{background:#fff;margin:15px;padding:15px;border-radius:6px}
+input,select,button{width:100%;padding:10px;margin-top:8px}
+button.primary{background:#0d6efd;color:#fff;border:none}
 .hidden{display:none}
+
 .overlay{
 position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,.8);color:#fff;
+background:rgba(0,0,0,.75);color:#fff;
 display:flex;align-items:center;justify-content:center;
-text-align:center;z-index:9999
+text-align:center;z-index:999
 }
-.green{background:#25d366}
+.overlay a{color:#25d366;font-size:18px;text-decoration:none}
 </style>
 </head>
 
@@ -27,71 +30,68 @@ text-align:center;z-index:9999
 
 <header>📊 Pos Pro</header>
 
-<!-- تسجيل الدخول -->
+<!-- تسجيل -->
 <div id="authBox" class="box">
 <h3>تسجيل الدخول</h3>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
-<button onclick="login()">دخول</button>
+<button class="primary" onclick="login()">دخول</button>
 <button onclick="register()">حساب جديد</button>
-<p id="authMsg"></p>
+<p id="msg"></p>
 </div>
 
 <!-- التطبيق -->
 <div id="app" class="hidden">
 
-<nav class="box">
-<button class="active" onclick="showTab('sales',this)">المبيعات</button>
-<button onclick="showTab('products',this)">المخزون</button>
-<button onclick="showTab('customers',this)">العملاء</button>
-<button onclick="showTab('reports',this)">التقارير</button>
+<nav>
+<button class="active" onclick="show('sales',this)">المبيعات</button>
+<button onclick="show('products',this)">المخزون</button>
+<button onclick="show('customers',this)">العملاء</button>
+<button onclick="show('reports',this)">التقارير</button>
 <button onclick="logout()">خروج</button>
 </nav>
 
 <div id="sales" class="box">
-<h3>فاتورة بيع</h3>
-<input id="saleItem" placeholder="الصنف">
-<input id="saleQty" type="number" placeholder="الكمية">
-<input id="salePrice" type="number" placeholder="السعر">
-<button onclick="addSale()">إضافة</button>
+<h3>🧾 مبيعات</h3>
+<input id="saleDesc" placeholder="وصف الفاتورة">
+<input id="saleAmount" type="number" placeholder="المبلغ">
+<button class="primary" onclick="addSale()">حفظ فاتورة</button>
 <div id="salesList"></div>
 </div>
 
 <div id="products" class="box hidden">
-<h3>المخزون</h3>
-<input id="prodName" placeholder="اسم الصنف">
-<input id="prodQty" type="number" placeholder="الكمية">
-<button onclick="addProduct()">حفظ</button>
-<div id="productsList"></div>
+<h3>📦 المخزون</h3>
+<input id="pName" placeholder="اسم الصنف">
+<input id="pQty" type="number" placeholder="الكمية">
+<button class="primary" onclick="addProduct()">إضافة</button>
+<div id="productList"></div>
 </div>
 
 <div id="customers" class="box hidden">
-<h3>العملاء</h3>
-<input id="custName" placeholder="اسم العميل">
-<button onclick="addCustomer()">إضافة</button>
-<div id="customersList"></div>
+<h3>👤 العملاء</h3>
+<input id="cName" placeholder="اسم العميل">
+<button class="primary" onclick="addCustomer()">إضافة</button>
+<div id="customerList"></div>
 </div>
 
 <div id="reports" class="box hidden">
-<h3>التقارير</h3>
-<p>إجمالي المبيعات: <b id="totalSales">0</b></p>
+<h3>📊 التقارير</h3>
+<p id="totalSales"></p>
 </div>
 
 </div>
 
 <!-- انتهاء الاشتراك -->
-<div id="expiredBox" class="overlay hidden">
+<div id="expired" class="overlay hidden">
 <div>
-<h2>انتهت فترة الاشتراك</h2>
-<p>برجاء تجديد الاشتراك لمتابعة استخدام Pos Pro</p>
-<a class="green" style="padding:12px 20px;display:inline-block;color:#fff;text-decoration:none"
-href="https://wa.me/201019936233?text=مرحبًا، أرغب في تجديد الاشتراك في Pos Pro">
-تواصل عبر واتساب
+<h2>⚠️ انتهت فترة الاشتراك</h2>
+<p>يمكنك عرض البيانات فقط</p>
+<a href="https://wa.me/201019936233?text=مرحبًا، أرغب في تجديد الاشتراك في Pos Pro">
+📲 تواصل عبر واتساب
 </a>
 </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -102,67 +102,91 @@ firebase.initializeApp({
  authDomain:"pos-pro-996f0.firebaseapp.com",
  projectId:"pos-pro-996f0"
 });
+
 const auth=firebase.auth();
 const db=firebase.firestore();
+let uid=null;
+let locked=false;
 
-let sales=0;
-
+/* Auth */
 function register(){
-auth.createUserWithEmailAndPassword(email.value,password.value)
-.then(r=>{
- let d=new Date();d.setDate(d.getDate()+14);
- return db.collection("users").doc(r.user.uid).set({
-  trialEndsAt:d
- });
-})
-.catch(e=>authMsg.innerText=e.message);
+ auth.createUserWithEmailAndPassword(email.value,password.value)
+ .then(r=>{
+  const d=new Date();d.setDate(d.getDate()+14);
+  return db.collection("users").doc(r.user.uid).set({
+   trialEndsAt:d
+  });
+ }).catch(e=>msg.innerText=e.message);
 }
 
 function login(){
-auth.signInWithEmailAndPassword(email.value,password.value)
-.catch(e=>authMsg.innerText=e.message);
+ auth.signInWithEmailAndPassword(email.value,password.value)
+ .catch(e=>msg.innerText=e.message);
 }
 
 function logout(){auth.signOut();}
 
-auth.onAuthStateChanged(u=>{
- if(!u){
-  authBox.classList.remove("hidden");
-  app.classList.add("hidden");
-  expiredBox.classList.add("hidden");
-  return;
- }
- authBox.classList.add("hidden");
- app.classList.remove("hidden");
-
- db.collection("users").doc(u.uid).get().then(s=>{
-  let end=s.data().trialEndsAt.toDate();
-  if(end < new Date()){
-   expiredBox.classList.remove("hidden");
-  }
- });
-});
-
-function showTab(id,btn){
- document.querySelectorAll('#app .box').forEach(x=>x.classList.add("hidden"));
- document.getElementById(id).classList.remove("hidden");
- document.querySelectorAll('nav button').forEach(b=>b.classList.remove("active"));
- btn.classList.add("active");
+/* UI */
+function show(id,b){
+ document.querySelectorAll('.box').forEach(x=>x.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active');
 }
 
+/* Data */
 function addSale(){
- sales += (+saleQty.value * +salePrice.value);
- salesList.innerHTML += `<div>${saleItem.value}</div>`;
- totalSales.innerText = sales;
+ if(locked)return alert("الاشتراك منتهي");
+ db.collection("sales").add({uid,amount:+saleAmount.value});
+ loadSales();
 }
 
 function addProduct(){
- productsList.innerHTML += `<div>${prodName.value} - ${prodQty.value}</div>`;
+ if(locked)return alert("الاشتراك منتهي");
+ db.collection("products").add({uid,name:pName.value,qty:+pQty.value});
+ loadProducts();
 }
 
 function addCustomer(){
- customersList.innerHTML += `<div>${custName.value}</div>`;
+ if(locked)return alert("الاشتراك منتهي");
+ db.collection("customers").add({uid,name:cName.value});
+ loadCustomers();
 }
+
+function loadSales(){
+ db.collection("sales").where("uid","==",uid).onSnapshot(s=>{
+  let t=0;salesList.innerHTML="";
+  s.forEach(d=>{t+=d.data().amount;salesList.innerHTML+=`<div>${d.data().amount}</div>`});
+  totalSales.innerText="إجمالي المبيعات: "+t;
+ });
+}
+
+function loadProducts(){
+ db.collection("products").where("uid","==",uid)
+ .onSnapshot(s=>{productList.innerHTML="";s.forEach(d=>productList.innerHTML+=`<div>${d.data().name}</div>`);});
+}
+
+function loadCustomers(){
+ db.collection("customers").where("uid","==",uid)
+ .onSnapshot(s=>{customerList.innerHTML="";s.forEach(d=>customerList.innerHTML+=`<div>${d.data().name}</div>`);});
+}
+
+/* State */
+auth.onAuthStateChanged(u=>{
+ if(!u)return;
+ uid=u.uid;
+ authBox.classList.add("hidden");
+ app.classList.remove("hidden");
+
+ db.collection("users").doc(uid).get().then(s=>{
+  if(new Date()>s.data().trialEndsAt.toDate()){
+   locked=true;
+   expired.classList.remove("hidden");
+  }
+ });
+
+ loadSales();loadProducts();loadCustomers();
+});
 </script>
 
 </body>
