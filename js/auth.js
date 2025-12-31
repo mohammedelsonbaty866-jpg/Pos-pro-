@@ -1,98 +1,77 @@
-/****************************************
- * PosPro – auth.js
- * Firebase Auth + Page Protection
- ****************************************/
-
-import {
-  auth,
-  watchAuth,
-  createUserProfile,
-  checkSubscription
-} from "./firebase.js";
+/*********************************
+ * PosPro - Authentication
+ * Register / Login / Logout
+ * No local password storage
+ *********************************/
 
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* =========================
-   UI Helpers
-   ========================= */
-function $(id) {
-  return document.getElementById(id);
-}
+import {
+  auth,
+  createUserProfile,
+  checkSubscription
+} from "./firebase.js";
 
-/* =========================
-   Register
-   ========================= */
+/* ===============================
+   🔐 Register
+================================ */
 export async function register(email, password) {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Create user profile in Firestore
     await createUserProfile(cred.user);
+
+    alert("✅ تم إنشاء الحساب بنجاح");
     location.href = "index.html";
+
   } catch (err) {
-    alert("خطأ في إنشاء الحساب: " + err.message);
+    alert("❌ خطأ: " + err.message);
   }
 }
 
-/* =========================
-   Login
-   ========================= */
+/* ===============================
+   🔓 Login
+================================ */
 export async function login(email, password) {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+
+    // Check subscription
+    const sub = await checkSubscription(cred.user.uid);
+    if (!sub.active) {
+      alert("⚠️ الاشتراك غير مفعل");
+      await signOut(auth);
+      return;
+    }
+
     location.href = "index.html";
+
   } catch (err) {
-    alert("بيانات الدخول غير صحيحة");
+    alert("❌ بيانات الدخول غير صحيحة");
   }
 }
 
-/* =========================
-   Logout
-   ========================= */
+/* ===============================
+   🚪 Logout
+================================ */
 export async function logout() {
   await signOut(auth);
   location.href = "login.html";
 }
 
-/* =========================
-   Route Protection
-   ========================= */
+/* ===============================
+   🛡 Page Protection
+================================ */
 export function protectPage() {
-  watchAuth(async user => {
+  onAuthStateChanged(auth, user => {
     if (!user) {
       location.href = "login.html";
-      return;
-    }
-
-    const valid = await checkSubscription(user.uid);
-    if (!valid) {
-      document.body.innerHTML = `
-        <div style="padding:40px;text-align:center">
-          <h2>انتهى الاشتراك</h2>
-          <p>يرجى تجديد الاشتراك للاستمرار</p>
-        </div>
-      `;
     }
   });
 }
-
-/* =========================
-   Login Page Bindings
-   ========================= */
-document.addEventListener("DOMContentLoaded", () => {
-  if ($("loginBtn")) {
-    $("loginBtn").onclick = () =>
-      login($("email").value, $("password").value);
-  }
-
-  if ($("registerBtn")) {
-    $("registerBtn").onclick = () =>
-      register($("email").value, $("password").value);
-  }
-
-  if ($("logoutBtn")) {
-    $("logoutBtn").onclick = logout;
-  }
-});
