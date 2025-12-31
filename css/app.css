@@ -1,46 +1,29 @@
 body{
+  font-family:Tahom,aArial;
+  background:#f4f6f8;
   margin:0;
-  font-family:Tahoma;
-  background:#f1f5f9
-}
-header{
-  background:#2563eb;
-  color:#fff;
-  padding:14px;
-  text-align:center
-}
-.box{
-  background:#fff;
-  margin:12px;
-  padding:14px;
-  border-radius:10px
-}
-input,select,button{
-  width:100%;
-  padding:10px;
-  margin-top:6px
-}
-button.primary{
-  background:#2563eb;
-  color:#fff;
-  border:none
 }
 nav{
+  background:#0d6efd;
   display:flex;
-  border-bottom:1px solid #ddd
 }
 nav button{
   flex:1;
+  padding:12px;
   border:none;
   background:none;
-  padding:12px
+  color:#fff;
 }
-nav button.active{
-  border-bottom:3px solid #2563eb;
-  font-weight:bold
+section{
+  padding:20px;
 }
-.list{
-  border-bottom:1px solid #eee;
-  padding:6px 0
+input,button{
+  width:100%;
+  padding:10px;
+  margin:5px 0;
 }
-.hidden{display:none}
+button{
+  background:#0d6efd;
+  color:#fff;
+  border:none;
+}
