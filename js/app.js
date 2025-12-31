@@ -1,71 +1,160 @@
-// app.js
+/****************************************
+ * PosPro – app.js
+ * Core Accounting Logic
+ ****************************************/
+
+import { auth } from "./firebase.js";
 import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  addData,
+  getData
+} from "./firebase.js";
 
-import { auth, db } from "./firebase.js";
+import { protectPage } from "./auth.js";
 
-let uid = null;
-auth.onAuthStateChanged(u => uid = u?.uid);
+protectPage();
 
-// إضافة فاتورة
-export async function addInvoice(items, total) {
-  await addDoc(collection(db, "invoices"), {
-    uid,
-    items,
-    total,
-    date: Date.now()
-  });
+/* =========================
+   State
+   ========================= */
+let currentUser = null;
+let invoices = [];
+let purchases = [];
+let expenses = [];
+let products = [];
+
+/* =========================
+   Helpers
+   ========================= */
+function $(id) {
+  return document.getElementById(id);
 }
 
-// إضافة مصروف
-export async function addExpense(type, amount) {
-  await addDoc(collection(db, "expenses"), {
-    uid,
-    type,
-    amount,
-    date: Date.now()
-  });
+function money(n) {
+  return Number(n || 0).toFixed(2);
 }
 
-// إضافة شراء
-export async function addPurchase(name, qty, price) {
-  await addDoc(collection(db, "purchases"), {
-    uid,
+/* =========================
+   Auth Ready
+   ========================= */
+auth.onAuthStateChanged(async user => {
+  if (!user) return;
+  currentUser = user;
+  await loadAll();
+});
+
+/* =========================
+   Load All Data
+   ========================= */
+async function loadAll() {
+  invoices = await getData(currentUser.uid, "invoices");
+  purchases = await getData(currentUser.uid, "purchases");
+  expenses = await getData(currentUser.uid, "expenses");
+  products = await getData(currentUser.uid, "products");
+
+  renderDashboard();
+}
+
+/* =========================
+   Dashboard
+   ========================= */
+function renderDashboard() {
+  const salesTotal = invoices.reduce((s, i) => s + i.total, 0);
+  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0);
+  const profit = salesTotal - expenseTotal;
+
+  if ($("dashSales")) $("dashSales").innerText = money(salesTotal);
+  if ($("dashExpenses")) $("dashExpenses").innerText = money(expenseTotal);
+  if ($("dashProfit")) $("dashProfit").innerText = money(profit);
+}
+
+/* =========================
+   Products
+   ========================= */
+export async function addProduct(name, price) {
+  await addData(currentUser.uid, "products", {
     name,
-    qty,
-    price,
-    date: Date.now()
+    price: Number(price)
+  });
+  products = await getData(currentUser.uid, "products");
+}
+
+/* =========================
+   Invoices
+   ========================= */
+export async function createInvoice(items, customer) {
+  const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+
+  await addData(currentUser.uid, "invoices", {
+    customer,
+    items,
+    total
+  });
+
+  invoices = await getData(currentUser.uid, "invoices");
+  renderDashboard();
+}
+
+/* =========================
+   Purchases
+   ========================= */
+export async function addPurchase(items) {
+  const total = items.reduce((s, i) => s + i.qty * i.cost, 0);
+
+  await addData(currentUser.uid, "purchases", {
+    items,
+    total
+  });
+
+  purchases = await getData(currentUser.uid, "purchases");
+}
+
+/* =========================
+   Expenses
+   ========================= */
+export async function addExpense(type, amount, note = "") {
+  await addData(currentUser.uid, "expenses", {
+    type,
+    amount: Number(amount),
+    note
+  });
+
+  expenses = await getData(currentUser.uid, "expenses");
+  renderDashboard();
+}
+
+/* =========================
+   Reports
+   ========================= */
+export function salesReport(from, to) {
+  return invoices.filter(i => {
+    const d = i.createdAt?.toDate?.() || new Date();
+    return (!from || d >= from) && (!to || d <= to);
   });
 }
 
-// تقرير صافي الربح
-export async function profitReport(from, to) {
-  let sales = 0, expenses = 0;
+export function profitReport(from, to) {
+  const sales = salesReport(from, to)
+    .reduce((s, i) => s + i.total, 0);
 
-  const invQ = query(
-    collection(db, "invoices"),
-    where("uid", "==", uid)
-  );
+  const exp = expenses.filter(e => {
+    const d = e.createdAt?.toDate?.() || new Date();
+    return (!from || d >= from) && (!to || d <= to);
+  }).reduce((s, e) => s + e.amount, 0);
 
-  const expQ = query(
-    collection(db, "expenses"),
-    where("uid", "==", uid)
-  );
-
-  (await getDocs(invQ)).forEach(d => {
-    if (d.data().date >= from && d.data().date <= to)
-      sales += d.data().total;
-  });
-
-  (await getDocs(expQ)).forEach(d => {
-    if (d.data().date >= from && d.data().date <= to)
-      expenses += d.data().amount;
-  });
-
-  return sales - expenses;
+  return {
+    sales,
+    expenses: exp,
+    profit: sales - exp
+  };
 }
+
+/* =========================
+   Offline Indicator
+   ========================= */
+window.addEventListener("offline", () => {
+  document.body.classList.add("offline");
+});
+
+window.addEventListener("online", () => {
+  document.body.classList.remove("offline");
+});
