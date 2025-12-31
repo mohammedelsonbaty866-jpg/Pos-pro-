@@ -3,104 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <title>PosPro | برنامج محاسبي SaaS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0d6efd">
 
   <!-- Style -->
   <link rel="stylesheet" href="css/app.css">
-</head>
 
+</head>
 <body>
 
 <header>
-  📊 PosPro — برنامج محاسبي احترافي
+  PosPro – برنامج محاسبي احترافي
+  <button onclick="logout()" style="float:left">خروج</button>
 </header>
 
-<nav>
-  <button class="active" onclick="show('dashboard',this)">الرئيسية</button>
-  <button onclick="show('sales',this)">المبيعات</button>
-  <button onclick="show('purchases',this)">المشتريات</button>
-  <button onclick="show('expenses',this)">المصروفات</button>
-  <button onclick="show('reports',this)">التقارير</button>
-  <button onclick="logout()">خروج</button>
-</nav>
+<main class="container">
 
-<div class="container">
-
-  <!-- Dashboard -->
-  <div id="dashboard" class="box">
-    <h3>مرحبًا بك 👋</h3>
-    <p>برنامج محاسبي يعمل بدون إنترنت ويدعم SaaS</p>
-    <span class="badge trial">حالة الاشتراك: تجريبي</span>
+  <!-- بيع -->
+  <div class="card">
+    <h3>فاتورة بيع</h3>
+    <input id="invCustomer" placeholder="اسم العميل">
+    <input id="invTotal" type="number" placeholder="الإجمالي">
+    <button onclick="saveInvoiceUI()">حفظ الفاتورة</button>
   </div>
 
-  <!-- Sales -->
-  <div id="sales" class="box" style="display:none">
-    <h3>🧾 فاتورة بيع</h3>
-    <input id="saleCustomer" placeholder="اسم العميل">
-    <input id="saleTotal" type="number" placeholder="الإجمالي">
-    <button class="primary" onclick="saveInvoice()">💾 حفظ الفاتورة</button>
-
-    <hr>
-    <div id="invoiceList"></div>
+  <!-- مصروفات -->
+  <div class="card">
+    <h3>مصروفات</h3>
+    <input id="expName" placeholder="الوصف">
+    <input id="expAmount" type="number" placeholder="المبلغ">
+    <button onclick="saveExpenseUI()">حفظ المصروف</button>
   </div>
 
-  <!-- Purchases -->
-  <div id="purchases" class="box" style="display:none">
-    <h3>📦 المشتريات</h3>
-    <input id="purchaseTotal" type="number" placeholder="إجمالي الشراء">
-    <button class="primary" onclick="savePurchase()">💾 حفظ</button>
+  <!-- تقارير -->
+  <div class="card">
+    <h3>تقارير</h3>
+    <input type="date" id="fromDate">
+    <input type="date" id="toDate">
+    <button onclick="loadProfit()">حساب صافي الربح</button>
+    <h4 id="profitResult"></h4>
   </div>
 
-  <!-- Expenses -->
-  <div id="expenses" class="box" style="display:none">
-    <h3>💸 المصروفات</h3>
-    <select id="expenseType">
-      <option>إيجار</option>
-      <option>كهرباء</option>
-      <option>مياه</option>
-      <option>رواتب</option>
-      <option>أخرى</option>
-    </select>
-    <input id="expenseAmount" type="number" placeholder="المبلغ">
-    <button class="primary" onclick="saveExpense()">➕ إضافة</button>
+</main>
 
-    <div id="expenseList"></div>
-  </div>
+<!-- ======================
+     JS MODULES
+====================== -->
+<script type="module">
+  import { logout } from "./js/auth.js";
+  import {
+    saveInvoice,
+    addExpense,
+    calculateProfit
+  } from "./js/app.js";
 
-  <!-- Reports -->
-  <div id="reports" class="box" style="display:none">
-    <h3>📊 التقارير</h3>
-    <button onclick="showProfit()">📈 صافي الربح</button>
-    <div id="reportResult"></div>
-  </div>
+  window.logout = logout;
 
-</div>
+  window.saveInvoiceUI = async () => {
+    await saveInvoice({
+      customer: invCustomer.value,
+      total: Number(invTotal.value)
+    });
+    alert("تم حفظ الفاتورة");
+    invCustomer.value = invTotal.value = "";
+  };
 
-<footer>
-  PosPro © 2025 — SaaS Accounting System
-</footer>
+  window.saveExpenseUI = async () => {
+    await addExpense({
+      name: expName.value,
+      amount: Number(expAmount.value)
+    });
+    alert("تم حفظ المصروف");
+    expName.value = expAmount.value = "";
+  };
 
-<!-- Scripts -->
-<script type="module" src="js/firebase.js"></script>
-<script type="module" src="js/auth.js"></script>
-<script type="module" src="js/app.js"></script>
-
-<script>
-function show(id, btn){
-  document.querySelectorAll('.box').forEach(b=>b.style.display='none');
-  document.getElementById(id).style.display='block';
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-}
+  window.loadProfit = async () => {
+    const profit = await calculateProfit(
+      new Date(fromDate.value),
+      new Date(toDate.value)
+    );
+    profitResult.innerText = "صافي الربح: " + profit;
+  };
 </script>
 
+<!-- Service Worker -->
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
 }
 </script>
 
