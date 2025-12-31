@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <title>Pos Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Tahoma;margin:0;background:#f4f6f8}
+body{font-family:Tahoma;background:#f4f6f8;margin:0}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center;font-size:20px}
 nav{display:flex;background:#fff}
-nav button{flex:1;padding:12px;border:none;background:#fff;font-size:14px}
+nav button{flex:1;padding:10px;border:none;background:#eee;font-size:14px}
 nav button.active{background:#0d6efd;color:#fff}
 .box{background:#fff;margin:10px;padding:15px;border-radius:6px}
 input,select,button{width:100%;padding:10px;margin-top:8px}
 button.primary{background:#0d6efd;color:#fff;border:none}
+.hidden{display:none}
+hr{margin:15px 0}
 </style>
 </head>
 
@@ -23,135 +25,155 @@ button.primary{background:#0d6efd;color:#fff;border:none}
 <nav>
 <button class="active" onclick="show('sales',this)">مبيعات</button>
 <button onclick="show('stock',this)">مخزون</button>
-<button onclick="show('clients',this)">عملاء</button>
+<button onclick="show('customers',this)">عملاء</button>
 <button onclick="show('reports',this)">تقارير</button>
 </nav>
 
-<!-- مبيعات -->
+<!-- المبيعات -->
 <div id="sales" class="box">
-<h3>🧾 فاتورة بيع</h3>
+<h3>فاتورة بيع</h3>
 <select id="saleProduct"></select>
-<input id="saleQty" type="number" value="1">
-<button class="primary" onclick="addItem()">إضافة</button>
+<input type="number" id="saleQty" value="1">
+<button class="primary" onclick="addSale()">إضافة</button>
 <hr>
 <div id="invoice"></div>
 <p>الإجمالي: <b id="total">0</b></p>
-<button class="primary" onclick="saveInvoice()">💾 حفظ الفاتورة</button>
+<button class="primary" onclick="saveInvoice()">حفظ الفاتورة</button>
 </div>
 
-<!-- مخزون -->
-<div id="stock" class="box" style="display:none">
-<h3>📦 المخزون</h3>
+<!-- المخزون -->
+<div id="stock" class="box hidden">
+<h3>المخزون</h3>
 <input id="pName" placeholder="اسم الصنف">
 <input id="pPrice" type="number" placeholder="السعر">
 <input id="pQty" type="number" placeholder="الكمية">
-<button class="primary" onclick="addProduct()">➕ إضافة</button>
+<button class="primary" onclick="addProduct()">إضافة صنف</button>
+<hr>
 <div id="stockList"></div>
 </div>
 
-<!-- عملاء -->
-<div id="clients" class="box" style="display:none">
-<h3>👥 العملاء</h3>
+<!-- العملاء -->
+<div id="customers" class="box hidden">
+<h3>العملاء</h3>
 <input id="cName" placeholder="اسم العميل">
 <input id="cPhone" placeholder="رقم الهاتف">
-<button class="primary" onclick="addClient()">➕ إضافة</button>
-<div id="clientList"></div>
+<button class="primary" onclick="addCustomer()">إضافة عميل</button>
+<hr>
+<div id="customerList"></div>
 </div>
 
-<!-- تقارير -->
-<div id="reports" class="box" style="display:none">
-<h3>📊 التقارير</h3>
-<p>إجمالي المبيعات: <b id="salesTotal">0</b></p>
-<p>عدد الفواتير: <b id="invoiceCount">0</b></p>
+<!-- التقارير -->
+<div id="reports" class="box hidden">
+<h3>التقارير</h3>
+<p>إجمالي المبيعات: <b id="repSales">0</b></p>
+<p>عدد الفواتير: <b id="repCount">0</b></p>
 </div>
 
 <script>
-let products = JSON.parse(localStorage.products||"[]");
-let invoices = JSON.parse(localStorage.invoices||"[]");
-let clients = JSON.parse(localStorage.clients||"[]");
-let cart=[];
-
+/* التنقل */
 function show(id,btn){
-document.querySelectorAll('.box').forEach(b=>b.style.display='none');
-document.getElementById(id).style.display='block';
+document.querySelectorAll('.box').forEach(d=>d.classList.add('hidden'));
+document.getElementById(id).classList.remove('hidden');
 document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
 btn.classList.add('active');
 }
 
-function save(){
-localStorage.products=JSON.stringify(products);
-localStorage.invoices=JSON.stringify(invoices);
-localStorage.clients=JSON.stringify(clients);
-}
+/* البيانات */
+let products = JSON.parse(localStorage.getItem("products")||"[]");
+let customers = JSON.parse(localStorage.getItem("customers")||"[]");
+let sales = JSON.parse(localStorage.getItem("sales")||"[]");
+let invoice = [];
 
+/* تحميل الأصناف */
 function loadProducts(){
-saleProduct.innerHTML='';
+saleProduct.innerHTML="";
 products.forEach((p,i)=>{
 saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`;
 });
 }
 
+/* المخزون */
 function addProduct(){
-products.push({name:pName.value,price:+pPrice.value,qty:+pQty.value});
-pName.value=pPrice.value=pQty.value='';
-save();renderStock();loadProducts();
+products.push({
+name:pName.value,
+price:+pPrice.value,
+qty:+pQty.value
+});
+localStorage.setItem("products",JSON.stringify(products));
+pName.value=pPrice.value=pQty.value="";
+renderStock();
+loadProducts();
 }
 
 function renderStock(){
-stockList.innerHTML='';
+stockList.innerHTML="";
 products.forEach(p=>{
-stockList.innerHTML+=`<div>${p.name} | ${p.qty}</div>`;
+stockList.innerHTML+=`<div>${p.name} | ${p.price} | ${p.qty}</div>`;
 });
 }
 
-function addItem(){
+/* المبيعات */
+function addSale(){
 let p=products[saleProduct.value];
 let q=+saleQty.value;
-cart.push({name:p.name,qty:q,price:p.price});
+if(p.qty<q){alert("الكمية غير متاحة");return;}
+invoice.push({name:p.name,qty:q,total:p.price*q});
 renderInvoice();
 }
 
 function renderInvoice(){
-let t=0;invoice.innerHTML='';
-cart.forEach(i=>{
-t+=i.qty*i.price;
+invoice.innerHTML="";
+let t=0;
+invoice.forEach(i=>{
+t+=i.total;
 invoice.innerHTML+=`<div>${i.name} × ${i.qty}</div>`;
 });
 total.innerText=t;
 }
 
 function saveInvoice(){
-cart.forEach(i=>{
-let p=products.find(x=>x.name==i.name);
+let sum=0;
+invoice.forEach(i=>{
+let p=products.find(x=>x.name===i.name);
 p.qty-=i.qty;
+sum+=i.total;
 });
-invoices.push({total:+total.innerText});
-cart=[];
-save();renderInvoice();renderStock();updateReports();
+sales.push({id:Date.now(),total:sum});
+localStorage.setItem("sales",JSON.stringify(sales));
+localStorage.setItem("products",JSON.stringify(products));
+invoice=[];
+renderInvoice();
+renderStock();
+updateReports();
 alert("تم حفظ الفاتورة");
 }
 
-function addClient(){
-clients.push({name:cName.value,phone:cPhone.value});
-cName.value=cPhone.value='';
-save();renderClients();
+/* العملاء */
+function addCustomer(){
+customers.push({name:cName.value,phone:cPhone.value});
+localStorage.setItem("customers",JSON.stringify(customers));
+cName.value=cPhone.value="";
+renderCustomers();
 }
 
-function renderClients(){
-clientList.innerHTML='';
-clients.forEach(c=>{
-clientList.innerHTML+=`<div>${c.name} - ${c.phone}</div>`;
+function renderCustomers(){
+customerList.innerHTML="";
+customers.forEach(c=>{
+customerList.innerHTML+=`<div>${c.name} - ${c.phone}</div>`;
 });
 }
 
+/* التقارير */
 function updateReports(){
-let sum=0;
-invoices.forEach(i=>sum+=i.total);
-salesTotal.innerText=sum;
-invoiceCount.innerText=invoices.length;
+repCount.innerText=sales.length;
+repSales.innerText=sales.reduce((a,b)=>a+b.total,0);
 }
 
-renderStock();renderClients();loadProducts();updateReports();
+/* تشغيل */
+renderStock();
+renderCustomers();
+loadProducts();
+updateReports();
 </script>
 
 </body>
