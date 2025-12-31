@@ -4,20 +4,24 @@
 <meta charset="UTF-8">
 <title>Pos Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
 
 <style>
-body{font-family:Tah​oma;margin:0;background:#f4f6f8}
+body{font-family:Tahoma;margin:0;background:#f4f6f8}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
-nav button{padding:10px;border:none}
-.box{background:#fff;margin:10px;padding:15px;border-radius:6px}
+nav{display:flex;background:#fff;border-bottom:1px solid #ddd}
+nav button{flex:1;padding:10px;border:none;background:none}
+nav button.active{background:#0d6efd;color:#fff}
+.box{background:#fff;margin:15px;padding:15px;border-radius:6px}
 input,select,button{width:100%;padding:10px;margin-top:8px}
 button{background:#0d6efd;color:#fff;border:none}
 .hidden{display:none}
+
 .overlay{
- position:fixed;top:0;left:0;width:100%;height:100%;
- background:rgba(0,0,0,.75);color:#fff;
- display:flex;align-items:center;justify-content:center;
- text-align:center;z-index:9999
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.8);color:#fff;
+display:flex;align-items:center;justify-content:center;
+text-align:center;z-index:9999
 }
 </style>
 </head>
@@ -25,61 +29,68 @@ button{background:#0d6efd;color:#fff;border:none}
 
 <header>📊 Pos Pro</header>
 
-<!-- LOGIN -->
-<div id="loginBox" class="box">
-<h3>تسجيل الدخول</h3>
-<input id="email" placeholder="البريد الإلكتروني">
+<!-- تسجيل -->
+<div id="authBox" class="box">
+<h3>تسجيل الدخول / حساب جديد</h3>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
 <button onclick="login()">دخول</button>
 <button onclick="register()">تسجيل جديد</button>
 <p id="msg"></p>
 </div>
 
-<!-- APP -->
+<!-- النظام -->
 <div id="app" class="hidden">
 
-<div class="box">
-<b id="userEmail"></b>
-<p id="subStatus"></p>
-<button onclick="logout()">تسجيل خروج</button>
+<nav>
+<button class="active" onclick="show('sales',this)">المبيعات</button>
+<button onclick="show('products',this)">المخزون</button>
+<button onclick="show('customers',this)">العملاء</button>
+<button onclick="show('reports',this)">التقارير</button>
+<button onclick="logout()">خروج</button>
+</nav>
+
+<div id="sales" class="box">
+<h3>فاتورة بيع</h3>
+<select id="saleProduct"></select>
+<input id="saleQty" type="number" value="1">
+<button onclick="addSale()">إضافة</button>
+<div id="invoice"></div>
+<b>الإجمالي: <span id="total">0</span></b>
+<button onclick="saveInvoice()">حفظ الفاتورة</button>
 </div>
 
-<div class="box">
-<h3>➕ إضافة منتج</h3>
-<input id="pName" placeholder="اسم المنتج">
+<div id="products" class="box hidden">
+<h3>المخزون</h3>
+<input id="pName" placeholder="اسم الصنف">
 <input id="pPrice" type="number" placeholder="السعر">
 <input id="pQty" type="number" placeholder="الكمية">
 <button onclick="addProduct()">إضافة</button>
+<div id="productList"></div>
 </div>
 
-<div class="box">
-<h3>🧾 بيع</h3>
-<select id="saleProduct"></select>
-<input id="saleQty" type="number" value="1">
-<button onclick="sell()">بيع</button>
-<p>الإجمالي: <b id="total">0</b></p>
+<div id="customers" class="box hidden">
+<h3>العملاء</h3>
+<input id="cName" placeholder="اسم العميل">
+<button onclick="addCustomer()">إضافة</button>
+<div id="customerList"></div>
 </div>
 
-<div class="box">
-<h3>📦 المخزون</h3>
-<div id="stock"></div>
-</div>
-
-<div class="box">
-<h3>📊 التقارير</h3>
+<div id="reports" class="box hidden">
+<h3>التقارير</h3>
 <p>إجمالي المبيعات: <b id="salesTotal">0</b></p>
 </div>
 
 </div>
 
-<!-- EXPIRED -->
+<!-- انتهاء الاشتراك -->
 <div id="expired" class="overlay hidden">
 <div>
 <h2>انتهت فترة التجربة</h2>
 <p>برجاء تجديد الاشتراك</p>
 <a style="color:#25d366;font-size:20px"
-href="https://wa.me/201019936233?text=مرحبًا، أرغب في تجديد الاشتراك في Pos Pro">
-تواصل عبر واتساب
+href="https://wa.me/201019936233?text=أرغب في تجديد الاشتراك في Pos Pro">
+تواصل واتساب
 </a>
 </div>
 </div>
@@ -91,7 +102,7 @@ href="https://wa.me/201019936233?text=مرحبًا، أرغب في تجديد ا
 
 <script>
 firebase.initializeApp({
- apiKey:"AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
+ apiKey:"AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQ0",
  authDomain:"pos-pro-996f0.firebaseapp.com",
  projectId:"pos-pro-996f0"
 });
@@ -99,19 +110,16 @@ firebase.initializeApp({
 const auth=firebase.auth();
 const db=firebase.firestore();
 
-let products=[], sales=0;
+let products=[],invoice=[],customers=[],sales=0;
 
 function register(){
  auth.createUserWithEmailAndPassword(email.value,password.value)
  .then(r=>{
-  let d=new Date(); d.setDate(d.getDate()+14);
+  const d=new Date();d.setDate(d.getDate()+14);
   return db.collection("users").doc(r.user.uid).set({
-   email:r.user.email,
-   trialEnds:d,
-   sub:"trial"
+   trialEnds:d,active:true
   });
- })
- .catch(e=>msg.innerText=e.message);
+ }).catch(e=>msg.innerText=e.message);
 }
 
 function login(){
@@ -122,47 +130,54 @@ function login(){
 function logout(){auth.signOut();}
 
 auth.onAuthStateChanged(u=>{
- if(!u){
-  loginBox.classList.remove("hidden");
-  app.classList.add("hidden");
-  return;
- }
- loginBox.classList.add("hidden");
- app.classList.remove("hidden");
- userEmail.innerText=u.email;
-
+ if(!u){authBox.classList.remove("hidden");app.classList.add("hidden");return;}
+ authBox.classList.add("hidden");app.classList.remove("hidden");
  db.collection("users").doc(u.uid).get().then(s=>{
-  let d=s.data();
-  if(d.sub==="active" || d.trialEnds.toDate()>new Date()){
-   subStatus.innerText="الاشتراك نشط";
-  }else{
-   expired.classList.remove("hidden");
+  if(s.exists){
+   const d=s.data().trialEnds.toDate();
+   if(new Date()>d){expired.classList.remove("hidden");}
   }
  });
 });
 
+function show(id,b){
+ document.querySelectorAll(".box").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");
+}
+
 function addProduct(){
  products.push({name:pName.value,price:+pPrice.value,qty:+pQty.value});
- render();
+ renderProducts();loadProducts();
 }
 
-function sell(){
- let i=saleProduct.value;
- let q=+saleQty.value;
- products[i].qty-=q;
- sales+=products[i].price*q;
- render();
+function renderProducts(){
+ productList.innerHTML="";
+ products.forEach(p=>productList.innerHTML+=`<div>${p.name} (${p.qty})</div>`);
 }
 
-function render(){
- stock.innerHTML="";
+function loadProducts(){
  saleProduct.innerHTML="";
- let t=0;
- products.forEach((p,i)=>{
-  stock.innerHTML+=`<div>${p.name} - ${p.qty}</div>`;
-  saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`;
- });
+ products.forEach((p,i)=>saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`);
+}
+
+function addSale(){
+ const p=products[saleProduct.value];
+ const q=+saleQty.value;
+ invoice.push({name:p.name,total:p.price*q});
+ total.innerText=invoice.reduce((a,b)=>a+b.total,0);
+}
+
+function saveInvoice(){
+ sales+=+total.innerText;
  salesTotal.innerText=sales;
+ invoice=[];total.innerText=0;
+}
+
+function addCustomer(){
+ customers.push(cName.value);
+ customerList.innerHTML+=`<div>${cName.value}</div>`;
 }
 </script>
 
