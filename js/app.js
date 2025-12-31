@@ -1,102 +1,71 @@
-import { initAuth } from './auth.js';
-import { auth, db } from './firebase.js';
+// app.js
 import {
- collection, addDoc, getDocs, query, where, Timestamp
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-let currentUser;
+import { auth, db } from "./firebase.js";
 
-initAuth(renderApp);
+let uid = null;
+auth.onAuthStateChanged(u => uid = u?.uid);
 
-async function renderApp(user){
- currentUser = user;
-
- document.getElementById("root").innerHTML = `
- <header>📊 Pos Pro</header>
-
- <nav>
-  <button class="active" onclick="show('sales',this)">فواتير</button>
-  <button onclick="show('expenses',this)">مصروفات</button>
-  <button onclick="show('reports',this)">تقارير</button>
-  <button onclick="show('settings',this)">الإعدادات</button>
- </nav>
-
- <div class="box" id="sales">
-  <h3>فاتورة بيع</h3>
-  <input id="customer" placeholder="اسم العميل">
-  <input id="total" type="number" placeholder="الإجمالي">
-  <button class="primary" onclick="saveInvoice()">حفظ الفاتورة</button>
- </div>
-
- <div class="box hidden" id="expenses">
-  <h3>مصروف</h3>
-  <input id="expNote" placeholder="الوصف">
-  <input id="expAmount" type="number">
-  <button class="primary" onclick="saveExpense()">حفظ</button>
- </div>
-
- <div class="box hidden" id="reports">
-  <h3>صافي الربح</h3>
-  <button onclick="loadReport()">عرض</button>
-  <div id="report"></div>
- </div>
-
- <div class="box hidden" id="settings">
-  <h3>الإعدادات</h3>
-  <input id="displayName" placeholder="اسم المستخدم">
-  <button class="primary" onclick="saveProfile()">حفظ</button>
- </div>
- `;
+// إضافة فاتورة
+export async function addInvoice(items, total) {
+  await addDoc(collection(db, "invoices"), {
+    uid,
+    items,
+    total,
+    date: Date.now()
+  });
 }
 
-window.show = (id,btn)=>{
- document.querySelectorAll(".box").forEach(b=>b.classList.add("hidden"));
- document.getElementById(id).classList.remove("hidden");
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
- btn.classList.add("active");
-};
+// إضافة مصروف
+export async function addExpense(type, amount) {
+  await addDoc(collection(db, "expenses"), {
+    uid,
+    type,
+    amount,
+    date: Date.now()
+  });
+}
 
-// فواتير
-window.saveInvoice = async()=>{
- await addDoc(collection(db,"invoices"),{
-  uid: currentUser.uid,
-  customer: customer.value,
-  total: +total.value,
-  date: Timestamp.now()
- });
- alert("تم حفظ الفاتورة");
-};
+// إضافة شراء
+export async function addPurchase(name, qty, price) {
+  await addDoc(collection(db, "purchases"), {
+    uid,
+    name,
+    qty,
+    price,
+    date: Date.now()
+  });
+}
 
-// مصروفات
-window.saveExpense = async()=>{
- await addDoc(collection(db,"expenses"),{
-  uid: currentUser.uid,
-  note: expNote.value,
-  amount: +expAmount.value,
-  date: Timestamp.now()
- });
- alert("تم حفظ المصروف");
-};
+// تقرير صافي الربح
+export async function profitReport(from, to) {
+  let sales = 0, expenses = 0;
 
-// تقارير
-window.loadReport = async()=>{
- let sales=0, exp=0;
+  const invQ = query(
+    collection(db, "invoices"),
+    where("uid", "==", uid)
+  );
 
- const inv = await getDocs(
-  query(collection(db,"invoices"), where("uid","==",currentUser.uid))
- );
- inv.forEach(d=>sales+=d.data().total);
+  const expQ = query(
+    collection(db, "expenses"),
+    where("uid", "==", uid)
+  );
 
- const ex = await getDocs(
-  query(collection(db,"expenses"), where("uid","==",currentUser.uid))
- );
- ex.forEach(d=>exp+=d.data().amount);
+  (await getDocs(invQ)).forEach(d => {
+    if (d.data().date >= from && d.data().date <= to)
+      sales += d.data().total;
+  });
 
- report.innerHTML = `<b>صافي الربح: ${sales-exp}</b>`;
-};
+  (await getDocs(expQ)).forEach(d => {
+    if (d.data().date >= from && d.data().date <= to)
+      expenses += d.data().amount;
+  });
 
-// إعدادات
-window.saveProfile = ()=>{
- auth.currentUser.updateProfile({displayName:displayName.value});
- alert("تم حفظ الاسم");
-};
+  return sales - expenses;
+}
