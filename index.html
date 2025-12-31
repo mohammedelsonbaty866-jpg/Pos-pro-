@@ -5,20 +5,27 @@
 <title>Pos Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase CDN (صحيح للويب المباشر) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-body{font-family:Tahoma;background:#f4f6f8;margin:0}
+body{margin:0;font-family:Tahomа;background:#f4f6f8}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center;font-size:20px}
-.box{background:#fff;margin:10px;padding:15px;border-radius:6px}
-input,button{width:100%;padding:10px;margin-top:6px;font-size:15px}
+nav{display:flex;background:#fff;border-bottom:1px solid #ddd}
+nav button{flex:1;border:none;background:none;padding:12px;font-size:14px}
+nav button.active{background:#0d6efd;color:#fff}
+.box{background:#fff;margin:10px;padding:15px;border-radius:8px}
+input,select,button{width:100%;padding:10px;margin-top:6px;font-size:15px}
 button.primary{background:#0d6efd;color:#fff;border:none}
 button.red{background:#dc3545;color:#fff;border:none}
 .hidden{display:none}
 hr{margin:15px 0}
+@media print{
+  nav,header,button{display:none}
+  body{background:#fff}
+}
 </style>
 </head>
 
@@ -26,177 +33,194 @@ hr{margin:15px 0}
 
 <header>📊 Pos Pro – برنامج محاسبي سحابي</header>
 
-<!-- تسجيل الدخول -->
+<!-- AUTH -->
 <div class="box" id="authBox">
 <h3>تسجيل الدخول</h3>
 <input id="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
 <button class="primary" onclick="login()">دخول</button>
-<button onclick="register()">إنشاء حساب جديد</button>
+<button onclick="register()">إنشاء حساب</button>
 <p id="authMsg"></p>
 </div>
 
-<!-- التطبيق -->
-<div class="hidden" id="appBox">
+<!-- APP -->
+<div id="appBox" class="hidden">
+
+<nav>
+<button class="active" onclick="show('sales',this)">المبيعات</button>
+<button onclick="show('products',this)">الأصناف</button>
+<button onclick="show('expenses',this)">المصروفات</button>
+<button onclick="show('reports',this)">التقارير</button>
+<button onclick="show('settings',this)">الإعدادات</button>
+</nav>
 
 <div class="box">
-<h3>مرحبًا 👋 <span id="userName"></span></h3>
-<button class="red" onclick="logout()">تسجيل خروج</button>
+مرحبًا 👋 <b id="userName"></b>
+<button class="red" onclick="logout()">خروج</button>
 </div>
 
-<div class="box">
-<h4>🧾 فاتورة بيع</h4>
-<input id="invoiceTotal" type="number" placeholder="إجمالي الفاتورة">
-<button class="primary" onclick="saveInvoice()">حفظ الفاتورة</button>
+<!-- SALES -->
+<div class="box" id="sales">
+<h3>🧾 فاتورة بيع</h3>
+<select id="saleProduct"></select>
+<input id="saleQty" type="number" value="1">
+<button class="primary" onclick="addToInvoice()">➕ إضافة</button>
+<hr>
+<div id="invoiceItems"></div>
+<p>الإجمالي: <b id="subTotal">0</b></p>
+<p id="taxRow" class="hidden">الضريبة: <b id="taxAmount">0</b></p>
+<p>الإجمالي النهائي: <b id="grandTotal">0</b></p>
+<button onclick="window.print()">🖨️ طباعة</button>
+<button class="primary" onclick="saveInvoice()">💾 حفظ</button>
 </div>
 
-<div class="box">
-<h4>💸 مصروف</h4>
+<!-- PRODUCTS -->
+<div class="box hidden" id="products">
+<h3>📦 الأصناف</h3>
+<input id="pName" placeholder="اسم الصنف">
+<input id="pPrice" type="number" placeholder="السعر">
+<input id="pQty" type="number" placeholder="الكمية">
+<button class="primary" onclick="addProduct()">إضافة</button>
+<div id="productList"></div>
+</div>
+
+<!-- EXPENSES -->
+<div class="box hidden" id="expenses">
+<h3>💸 مصروفات</h3>
+<select id="expenseType">
+<option>إيجار</option><option>كهرباء</option><option>رواتب</option><option>أخرى</option>
+</select>
 <input id="expenseAmount" type="number" placeholder="المبلغ">
-<input id="expenseNote" placeholder="الوصف">
-<button class="primary" onclick="saveExpense()">حفظ المصروف</button>
+<button class="primary" onclick="addExpense()">حفظ</button>
+<div id="expenseList"></div>
 </div>
 
-<div class="box">
-<h4>📄 الفواتير</h4>
-<div id="invoiceList"></div>
-</div>
-
-<div class="box">
-<h4>📊 التقارير</h4>
-<button onclick="generateReport()">عرض التقرير</button>
+<!-- REPORTS -->
+<div class="box hidden" id="reports">
+<h3>📊 التقارير</h3>
+<button onclick="loadReport()">عرض التقرير</button>
 <div id="reportBox"></div>
 </div>
 
-<p id="status"></p>
+<!-- SETTINGS -->
+<div class="box hidden" id="settings">
+<h3>⚙️ الإعدادات</h3>
+<select id="taxEnabled">
+<option value="false">بدون ضريبة</option>
+<option value="true">تفعيل الضريبة</option>
+</select>
+<input id="taxRate" type="number" placeholder="نسبة الضريبة %">
+<button class="primary" onclick="saveSettings()">حفظ</button>
+</div>
+
 </div>
 
 <script>
-/* 🔥 Firebase Config (مدمج من بياناتك) */
-const firebaseConfig = {
-  apiKey: "AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
-  authDomain: "pos-pro-996f0.firebaseapp.com",
-  projectId: "pos-pro-996f0",
-  storageBucket: "pos-pro-996f0.firebasestorage.app",
-  messagingSenderId: "591451935128",
-  appId: "1:591451935128:web:683495139e62fb9b1e1bed"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-let currentUser = null;
-
-/* AUTH */
-auth.onAuthStateChanged(user=>{
-  if(user){
-    currentUser=user;
-    authBox.classList.add("hidden");
-    appBox.classList.remove("hidden");
-    userName.innerText=user.email;
-    loadInvoices();
-  }
+/* Firebase */
+firebase.initializeApp({
+ apiKey:"AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
+ authDomain:"pos-pro-996f0.firebaseapp.com",
+ projectId:"pos-pro-996f0"
 });
 
-function register(){
-  auth.createUserWithEmailAndPassword(email.value,password.value)
-  .catch(e=>authMsg.innerText=e.message);
+const auth=firebase.auth();
+const db=firebase.firestore();
+let user,products=[],invoice=[],settings={};
+
+auth.onAuthStateChanged(u=>{
+ if(u){user=u;authBox.classList.add("hidden");appBox.classList.remove("hidden");userName.innerText=u.email;loadAll();}
+});
+
+function register(){auth.createUserWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
+function login(){auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
+function logout(){auth.signOut();location.reload()}
+
+/* NAV */
+function show(id,b){
+ document.querySelectorAll(".box").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");
 }
 
-function login(){
-  auth.signInWithEmailAndPassword(email.value,password.value)
-  .catch(e=>authMsg.innerText=e.message);
+/* PRODUCTS */
+function addProduct(){
+ db.collection("products").add({uid:user.uid,name:pName.value,price:+pPrice.value,qty:+pQty.value});
+ pName.value=pPrice.value=pQty.value="";
+ loadProducts();
 }
 
-function logout(){
-  auth.signOut();
-  location.reload();
+function loadProducts(){
+ saleProduct.innerHTML="";productList.innerHTML="";
+ db.collection("products").where("uid","==",user.uid).get().then(s=>{
+  products=[];
+  s.forEach(d=>{
+   products.push({...d.data(),id:d.id});
+   saleProduct.innerHTML+=`<option value="${d.id}">${d.data().name}</option>`;
+   productList.innerHTML+=`<div>${d.data().name} | ${d.data().qty}</div>`;
+  });
+ });
 }
 
-/* INVOICE */
+/* SALES */
+function addToInvoice(){
+ let p=products.find(x=>x.id==saleProduct.value);
+ invoice.push({...p,qty:+saleQty.value,total:p.price*saleQty.value});
+ renderInvoice();
+}
+
+function renderInvoice(){
+ let s=0;invoiceItems.innerHTML="";
+ invoice.forEach(i=>{s+=i.total;invoiceItems.innerHTML+=`<div>${i.name} × ${i.qty}</div>`});
+ subTotal.innerText=s;
+ let tax=settings.taxEnabled?s*(settings.taxRate/100):0;
+ taxRow.classList.toggle("hidden",!settings.taxEnabled);
+ taxAmount.innerText=tax;
+ grandTotal.innerText=s+tax;
+}
+
 function saveInvoice(){
-  const total=+invoiceTotal.value;
-  if(!total) return;
-
-  db.collection("invoices").add({
-    uid:currentUser.uid,
-    number:"INV-"+Date.now(),
-    total:total,
-    date:new Date()
-  }).then(()=>{
-    invoiceTotal.value="";
-    loadInvoices();
-    status.innerText="✅ تم حفظ الفاتورة";
-  });
+ db.collection("invoices").add({uid:user.uid,total:+grandTotal.innerText,date:new Date()});
+ invoice=[];renderInvoice();
 }
 
-/* EXPENSE */
-function saveExpense(){
-  const amount=+expenseAmount.value;
-  if(!amount) return;
-
-  db.collection("expenses").add({
-    uid:currentUser.uid,
-    amount:amount,
-    note:expenseNote.value,
-    date:new Date()
-  }).then(()=>{
-    expenseAmount.value="";
-    expenseNote.value="";
-    status.innerText="✅ تم حفظ المصروف";
-  });
+/* EXPENSES */
+function addExpense(){
+ db.collection("expenses").add({uid:user.uid,type:expenseType.value,amount:+expenseAmount.value,date:new Date()});
+ expenseAmount.value="";
+ loadExpenses();
 }
 
-/* LOAD INVOICES */
-function loadInvoices(){
-  invoiceList.innerHTML="";
-  db.collection("invoices")
-  .where("uid","==",currentUser.uid)
-  .orderBy("date","desc")
-  .get()
-  .then(snap=>{
-    snap.forEach(doc=>{
-      const i=doc.data();
-      invoiceList.innerHTML+=`
-      <div class="box">
-      ${i.number}<br>
-      ${i.date.toDate().toLocaleString("ar-EG")}<br>
-      الإجمالي: ${i.total} ج
-      <button onclick="printInvoice('${i.number}',${i.total})">🖨️ طباعة</button>
-      </div>`;
-    });
-  });
+function loadExpenses(){
+ expenseList.innerHTML="";
+ db.collection("expenses").where("uid","==",user.uid).get().then(s=>{
+  s.forEach(d=>expenseList.innerHTML+=`<div>${d.data().type} - ${d.data().amount}</div>`);
+ });
 }
 
 /* REPORT */
-function generateReport(){
-  let sales=0,expenses=0;
-
-  db.collection("invoices").where("uid","==",currentUser.uid).get()
-  .then(s=>{
-    s.forEach(d=>sales+=d.data().total);
-
-    db.collection("expenses").where("uid","==",currentUser.uid).get()
-    .then(e=>{
-      e.forEach(d=>expenses+=d.data().amount);
-
-      reportBox.innerHTML=`
-      <div class="box">
-      إجمالي المبيعات: ${sales} ج<br>
-      إجمالي المصروفات: ${expenses} ج<br>
-      <b>صافي الربح: ${sales-expenses} ج</b>
-      </div>`;
-    });
+function loadReport(){
+ let sales=0,exp=0;
+ db.collection("invoices").where("uid","==",user.uid).get().then(s=>{
+  s.forEach(d=>sales+=d.data().total);
+  db.collection("expenses").where("uid","==",user.uid).get().then(e=>{
+   e.forEach(d=>exp+=d.data().amount);
+   reportBox.innerHTML=`مبيعات: ${sales}<br>مصروفات: ${exp}<br><b>صافي الربح: ${sales-exp}</b>`;
   });
+ });
 }
 
-/* PRINT */
-function printInvoice(num,total){
-  const w=window.open("");
-  w.document.write(`<h2>Pos Pro</h2><p>${num}</p><p>${total} جنيه</p>`);
-  w.print();
+/* SETTINGS */
+function saveSettings(){
+ settings={taxEnabled:taxEnabled.value==="true",taxRate:+taxRate.value};
+ db.collection("settings").doc(user.uid).set(settings);
 }
+
+function loadSettings(){
+ db.collection("settings").doc(user.uid).get().then(d=>{if(d.exists)settings=d.data()});
+}
+
+function loadAll(){loadProducts();loadExpenses();loadSettings()}
 </script>
 
 </body>
