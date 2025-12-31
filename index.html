@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <title>Pos Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
 
 <style>
 body{font-family:Tahoma;margin:0;background:#f4f6f8}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
 nav{display:flex;background:#fff}
-nav button{flex:1;padding:10px;border:none;background:#eee}
+nav button{flex:1;padding:10px;border:none}
 nav button.active{background:#0d6efd;color:#fff}
-.box{background:#fff;margin:10px;padding:15px;border-radius:6px}
-input,select,button{width:100%;padding:10px;margin-top:5px}
+.box{background:#fff;margin:10px;padding:10px;border-radius:6px}
+input,select,button{width:100%;padding:8px;margin-top:5px}
 button{background:#0d6efd;color:#fff;border:none}
 .hidden{display:none}
 .overlay{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,.7);color:#fff;
-display:flex;align-items:center;justify-content:center;
-text-align:center;z-index:999
+ position:fixed;top:0;left:0;width:100%;height:100%;
+ background:rgba(0,0,0,.8);color:#fff;
+ display:flex;align-items:center;justify-content:center;
+ z-index:999
 }
 </style>
 </head>
@@ -29,9 +29,8 @@ text-align:center;z-index:999
 
 <header>📊 Pos Pro</header>
 
-<!-- تسجيل -->
 <div id="loginBox" class="box">
-<h3>تسجيل الدخول / حساب جديد</h3>
+<h3>تسجيل الدخول</h3>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
 <button onclick="login()">دخول</button>
@@ -39,60 +38,56 @@ text-align:center;z-index:999
 <p id="msg"></p>
 </div>
 
-<!-- التطبيق -->
 <div id="app" class="hidden">
-
 <nav>
-<button class="active" onclick="show('sales',this)">المبيعات</button>
-<button onclick="show('products',this)">المخزون</button>
-<button onclick="show('customers',this)">العملاء</button>
-<button onclick="show('reports',this)">التقارير</button>
+<button onclick="show('sales')" class="active">المبيعات</button>
+<button onclick="show('products')">المخزون</button>
+<button onclick="show('clients')">العملاء</button>
+<button onclick="show('reports')">التقارير</button>
+<button onclick="logout()">خروج</button>
 </nav>
 
 <div id="sales" class="box">
 <h3>فاتورة بيع</h3>
 <select id="saleProduct"></select>
-<input type="number" id="saleQty" value="1">
+<input id="saleQty" type="number" value="1">
 <button onclick="addSale()">إضافة</button>
 <div id="invoice"></div>
 <p>الإجمالي: <b id="total">0</b></p>
-<button onclick="saveInvoice()">حفظ الفاتورة</button>
+<button onclick="saveSale()">حفظ</button>
 </div>
 
 <div id="products" class="box hidden">
 <h3>المخزون</h3>
-<input id="pname" placeholder="اسم الصنف">
-<input id="pprice" type="number" placeholder="السعر">
-<input id="pqty" type="number" placeholder="الكمية">
+<input id="pName" placeholder="اسم الصنف">
+<input id="pPrice" type="number" placeholder="السعر">
+<input id="pQty" type="number" placeholder="الكمية">
 <button onclick="addProduct()">إضافة</button>
 <div id="productList"></div>
 </div>
 
-<div id="customers" class="box hidden">
+<div id="clients" class="box hidden">
 <h3>العملاء</h3>
-<input id="cname" placeholder="اسم العميل">
-<input id="cphone" placeholder="الهاتف">
-<button onclick="addCustomer()">إضافة</button>
-<div id="customerList"></div>
+<input id="cName" placeholder="اسم العميل">
+<input id="cPhone" placeholder="الهاتف">
+<button onclick="addClient()">إضافة</button>
+<div id="clientList"></div>
 </div>
 
 <div id="reports" class="box hidden">
-<h3>التقارير</h3>
-<p>إجمالي المبيعات: <b id="salesSum">0</b></p>
-<p>عدد الفواتير: <b id="salesCount">0</b></p>
+<h3>تقارير</h3>
+<p>إجمالي المبيعات: <b id="rSales">0</b></p>
+<p>عدد العملاء: <b id="rClients">0</b></p>
+<p>عدد الأصناف: <b id="rProducts">0</b></p>
+</div>
 </div>
 
-<button onclick="logout()">تسجيل خروج</button>
-</div>
-
-<!-- انتهاء الاشتراك -->
 <div id="expired" class="overlay hidden">
 <div>
-<h2>انتهت فترة التجربة</h2>
-<p>برجاء تجديد الاشتراك</p>
+<h2>انتهت فترة الاشتراك</h2>
 <a style="color:#25d366;font-size:20px"
-href="https://wa.me/201019936233?text=مرحبًا، أرغب في الاشتراك في Pos Pro">
-تواصل واتساب</a>
+href="https://wa.me/201019936233?text=أرغب في تجديد اشتراك Pos Pro">
+تواصل عبر واتساب</a>
 </div>
 </div>
 
@@ -111,16 +106,15 @@ firebase.initializeApp({
 const auth=firebase.auth();
 const db=firebase.firestore();
 
-let products=[],customers=[],sales=[],invoice=[];
+let products=[],clients=[],sales=[],invoice=[];
 
 function register(){
  auth.createUserWithEmailAndPassword(email.value,password.value)
  .then(r=>{
-  let d=new Date();d.setDate(d.getDate()+14);
+  const d=new Date();d.setDate(d.getDate()+14);
   return db.collection("users").doc(r.user.uid).set({
-   email:r.user.email,
-   trialEnds:d,
-   subscription:"trial"
+   subscription:"trial",
+   trialEndsAt:d
   });
  }).catch(e=>msg.innerText=e.message);
 }
@@ -133,57 +127,41 @@ function login(){
 function logout(){auth.signOut();}
 
 auth.onAuthStateChanged(u=>{
- if(!u){loginBox.classList.remove("hidden");app.classList.add("hidden");return;}
- loginBox.classList.add("hidden");app.classList.remove("hidden");
+ if(!u)return;
+ loginBox.classList.add("hidden");
+ app.classList.remove("hidden");
 
  db.collection("users").doc(u.uid).get().then(s=>{
-  let d=s.data();
-  if(d.subscription==="active"||d.trialEnds.toDate()>new Date()){
-   loadData(u.uid);
-  }else{
+  const d=s.data();
+  if(d.subscription!=="active" && d.trialEndsAt.toDate()<new Date()){
    expired.classList.remove("hidden");
+  }
+ });
+
+ db.collection("data").doc(u.uid).get().then(d=>{
+  if(d.exists){
+   let x=d.data();
+   products=x.products||[];
+   clients=x.clients||[];
+   sales=x.sales||[];
+   render();
   }
  });
 });
 
-function loadData(uid){
- db.collection("data").doc(uid).get().then(s=>{
-  if(s.exists){
-   let d=s.data();
-   products=d.products||[];
-   customers=d.customers||[];
-   sales=d.sales||[];
-  }
-  renderAll();
- });
-}
-
-function saveData(){
- let uid=auth.currentUser.uid;
- db.collection("data").doc(uid).set({products,customers,sales});
-}
-
-function show(id,b){
- document.querySelectorAll(".box").forEach(x=>x.classList.add("hidden"));
+function show(id){
+ document.querySelectorAll('.box').forEach(x=>x.classList.add("hidden"));
  document.getElementById(id).classList.remove("hidden");
- document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
- b.classList.add("active");
 }
 
 function addProduct(){
- products.push({name:pname.value,price:+pprice.value,qty:+pqty.value});
- pname.value=pprice.value=pqty.value="";
- saveData();renderProducts();loadProducts();
+ products.push({name:pName.value,price:+pPrice.value,qty:+pQty.value});
+ save();
 }
 
-function renderProducts(){
- productList.innerHTML="";
- products.forEach(p=>productList.innerHTML+=`<div>${p.name} (${p.qty})</div>`);
-}
-
-function loadProducts(){
- saleProduct.innerHTML="";
- products.forEach((p,i)=>saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`);
+function addClient(){
+ clients.push({name:cName.value,phone:cPhone.value});
+ save();
 }
 
 function addSale(){
@@ -193,47 +171,46 @@ function addSale(){
  renderInvoice();
 }
 
-function renderInvoice(){
- let t=0;invoiceDiv="";
- invoice.forEach(i=>{t+=i.total;invoiceDiv+=`<div>${i.name} × ${i.qty}</div>`});
- invoice.innerHTML=invoiceDiv;
- total.innerText=t;
-}
-
-function saveInvoice(){
+function saveSale(){
+ sales.push({total:+total.innerText,date:new Date()});
  invoice.forEach(i=>{
-  let p=products.find(x=>x.name==i.name);
-  p.qty-=i.qty;
+  products.find(p=>p.name===i.name).qty-=i.qty;
  });
- sales.push({date:new Date(),total:+total.innerText});
  invoice=[];
- saveData();renderAll();
+ save();
 }
 
-function addCustomer(){
- customers.push({name:cname.value,phone:cphone.value});
- cname.value=cphone.value="";
- saveData();renderCustomers();
+function save(){
+ auth.currentUser &&
+ db.collection("data").doc(auth.currentUser.uid).set({
+  products,clients,sales
+ });
+ render();
 }
 
-function renderCustomers(){
- customerList.innerHTML="";
- customers.forEach(c=>customerList.innerHTML+=`<div>${c.name} - ${c.phone}</div>`);
+function render(){
+ productList.innerHTML="";
+ products.forEach((p,i)=>{
+  productList.innerHTML+=`${p.name} (${p.qty})<br>`;
+ });
+ saleProduct.innerHTML="";
+ products.forEach((p,i)=>{
+  saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`;
+ });
+ clientList.innerHTML="";
+ clients.forEach(c=>{
+  clientList.innerHTML+=`${c.name}<br>`;
+ });
+ rSales.innerText=sales.reduce((a,b)=>a+b.total,0);
+ rClients.innerText=clients.length;
+ rProducts.innerText=products.length;
 }
 
-function renderReports(){
- salesSum.innerText=sales.reduce((a,b)=>a+b.total,0);
- salesCount.innerText=sales.length;
-}
-
-function renderAll(){
- renderProducts();renderCustomers();renderReports();loadProducts();
-}
-</script>
-
-<script>
-if("serviceWorker" in navigator){
- navigator.serviceWorker.register("service-worker.js");
+function renderInvoice(){
+ let t=0;invoiceDiv=invoice;
+ invoice.innerHTML="";
+ invoice.forEach(i=>t+=i.total);
+ total.innerText=t;
 }
 </script>
 
