@@ -1,41 +1,16 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>Pos Pro</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="css/app.css">
+<title>TEST</title>
 </head>
 <body>
 
-<div id="login">
-  <input id="email" placeholder="البريد">
-  <input id="pass" type="password" placeholder="كلمة المرور">
-  <button onclick="doLogin()">دخول</button>
-</div>
-
-<div id="app" hidden>
-  <button onclick="logout()">خروج</button>
-  <h3>نظام محاسبي SaaS</h3>
-</div>
-
-<script type="module">
-import { login, logout, watch } from "./js/auth.js";
-
-window.doLogin=()=>login(email.value,pass.value);
-window.logout=logout;
-
-watch(u=>{
-  login.hidden=!!u;
-  app.hidden=!u;
-});
-</script>
+<h1 style="color:red">لو شفت الكلام ده يبقى HTML شغال</h1>
 
 <script>
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("service-worker.js");
-}
+  alert("JS شغال");
 </script>
+
 </body>
 </html>
