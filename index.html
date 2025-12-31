@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Pos Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -16,6 +15,7 @@ header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
 .box{background:#fff;margin:10px;padding:15px;border-radius:6px}
 input,button{width:100%;padding:10px;margin-top:5px}
 button.primary{background:#0d6efd;color:#fff;border:none}
+button.red{background:#dc3545;color:#fff;border:none}
 .hidden{display:none}
 </style>
 </head>
@@ -23,7 +23,7 @@ button.primary{background:#0d6efd;color:#fff;border:none}
 
 <header>📊 Pos Pro</header>
 
-<!-- LOGIN -->
+<!-- AUTH -->
 <div class="box" id="authBox">
 <h3>تسجيل الدخول</h3>
 <input id="email" placeholder="البريد الإلكتروني">
@@ -34,117 +34,166 @@ button.primary{background:#0d6efd;color:#fff;border:none}
 </div>
 
 <!-- APP -->
-<div class="box hidden" id="appBox">
-<h3>مرحبًا <span id="userName"></span></h3>
+<div class="hidden" id="appBox">
 
+<div class="box">
+<h3>مرحبًا 👋 <span id="userName"></span></h3>
+<button class="red" onclick="logout()">تسجيل خروج</button>
+</div>
+
+<!-- SALES -->
+<div class="box">
+<h4>🧾 فاتورة جديدة</h4>
 <input id="saleTotal" type="number" placeholder="إجمالي الفاتورة">
-<button class="primary" onclick="saveSale()">💾 حفظ فاتورة</button>
+<button class="primary" onclick="saveSale()">حفظ الفاتورة</button>
+</div>
+
+<!-- EXPENSES -->
+<div class="box">
+<h4>💸 مصروف جديد</h4>
+<input id="expenseAmount" type="number" placeholder="قيمة المصروف">
+<input id="expenseNote" placeholder="ملاحظة">
+<button class="primary" onclick="saveExpense()">حفظ المصروف</button>
+</div>
+
+<!-- INVOICES -->
+<div class="box">
+<h4>📄 الفواتير</h4>
+<div id="invoiceList"></div>
+</div>
+
+<!-- REPORTS -->
+<div class="box">
+<h4>📊 التقارير</h4>
+<button onclick="generateReport()">عرض التقرير</button>
+<div id="reportBox"></div>
+</div>
 
 <p id="status"></p>
-<button onclick="logout()">تسجيل خروج</button>
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT"
+/* FIREBASE */
+const firebaseConfig={
+  apiKey:"YOUR_API_KEY",
+  authDomain:"YOUR_PROJECT.firebaseapp.com",
+  projectId:"YOUR_PROJECT"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const dbCloud = firebase.firestore();
+const auth=firebase.auth();
 
-/* ================= OFFLINE DB ================= */
+/* OFFLINE DB */
 let db;
-const req = indexedDB.open("PosProDB",1);
+const req=indexedDB.open("PosProDB",1);
 req.onupgradeneeded=e=>{
   db=e.target.result;
   db.createObjectStore("sales",{keyPath:"id"});
+  db.createObjectStore("expenses",{keyPath:"id"});
 };
 req.onsuccess=e=>db=e.target.result;
 
-/* ================= AUTH ================= */
+/* AUTH */
 let currentUser=null;
-
-auth.onAuthStateChanged(async user=>{
+auth.onAuthStateChanged(user=>{
   if(user){
     currentUser=user;
     authBox.classList.add("hidden");
     appBox.classList.remove("hidden");
     userName.innerText=user.email;
-
-    checkSubscription();
+    loadInvoices();
   }
 });
 
 function register(){
   auth.createUserWithEmailAndPassword(email.value,password.value)
-  .then(async res=>{
-    await dbCloud.collection("users").doc(res.user.uid).set({
-      email:res.user.email,
-      created:Date.now(),
-      trialEnds:Date.now()+14*24*60*60*1000
-    });
-  }).catch(e=>authMsg.innerText=e.message);
+  .catch(e=>authMsg.innerText=e.message);
 }
-
 function login(){
   auth.signInWithEmailAndPassword(email.value,password.value)
   .catch(e=>authMsg.innerText=e.message);
 }
-
 function logout(){
-  auth.signOut();
-  location.reload();
+  auth.signOut();location.reload();
 }
 
-/* ================= SUBSCRIPTION ================= */
-async function checkSubscription(){
-  const doc=await dbCloud.collection("users").doc(currentUser.uid).get();
-  const data=doc.data();
-  if(Date.now()>data.trialEnds){
-    alert("انتهت فترة التجربة – برجاء تجديد الاشتراك");
-    logout();
-  }
-}
-
-/* ================= SALES ================= */
+/* SALES */
 function saveSale(){
-  const data={
+  const invoice={
     id:Date.now(),
     uid:currentUser.uid,
+    number:"INV-"+Date.now(),
     total:+saleTotal.value,
     date:new Date().toISOString()
   };
-
   const tx=db.transaction("sales","readwrite");
-  tx.objectStore("sales").add(data);
-
-  status.innerText="تم الحفظ بدون إنترنت ✅";
+  tx.objectStore("sales").add(invoice);
+  saleTotal.value="";
+  loadInvoices();
+  status.innerText="تم حفظ الفاتورة ✅";
 }
 
-/* ================= SYNC ================= */
-window.addEventListener("online",syncSales);
+/* EXPENSES */
+function saveExpense(){
+  const exp={
+    id:Date.now(),
+    uid:currentUser.uid,
+    amount:+expenseAmount.value,
+    note:expenseNote.value,
+    date:new Date().toISOString()
+  };
+  const tx=db.transaction("expenses","readwrite");
+  tx.objectStore("expenses").add(exp);
+  expenseAmount.value="";
+  expenseNote.value="";
+  status.innerText="تم حفظ المصروف ✅";
+}
 
-function syncSales(){
-  const tx=db.transaction("sales","readwrite");
-  const store=tx.objectStore("sales");
-  store.getAll().onsuccess=e=>{
-    e.target.result.forEach(item=>{
-      dbCloud.collection("sales")
-        .doc(item.uid)
-        .collection("invoices")
-        .add(item);
-      store.delete(item.id);
+/* LOAD INVOICES */
+function loadInvoices(){
+  const tx=db.transaction("sales","readonly");
+  tx.objectStore("sales").getAll().onsuccess=e=>{
+    invoiceList.innerHTML="";
+    e.target.result.filter(i=>i.uid===currentUser.uid)
+    .forEach(i=>{
+      invoiceList.innerHTML+=`
+      <div class="box">
+        ${i.number}<br>
+        ${new Date(i.date).toLocaleString("ar-EG")}<br>
+        الإجمالي: ${i.total} ج
+        <button onclick="printInvoice('${i.number}',${i.total})">🖨️ طباعة</button>
+      </div>`;
     });
-    status.innerText="تمت المزامنة مع السيرفر 🔁";
   };
 }
 
-/* ================= SERVICE WORKER ================= */
-if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("service-worker.js");
+/* REPORT */
+function generateReport(){
+  let sales=0,expenses=0;
+  db.transaction("sales","readonly").objectStore("sales")
+  .getAll().onsuccess=e=>{
+    e.target.result.filter(i=>i.uid===currentUser.uid)
+    .forEach(i=>sales+=i.total);
+
+    db.transaction("expenses","readonly").objectStore("expenses")
+    .getAll().onsuccess=x=>{
+      x.target.result.filter(i=>i.uid===currentUser.uid)
+      .forEach(i=>expenses+=i.amount);
+
+      reportBox.innerHTML=`
+      <div class="box">
+      إجمالي المبيعات: ${sales} ج<br>
+      إجمالي المصروفات: ${expenses} ج<br>
+      <b>صافي الربح: ${sales-expenses} ج</b>
+      </div>`;
+    };
+  };
+}
+
+/* PRINT */
+function printInvoice(num,total){
+  const w=window.open("");
+  w.document.write(`<h2>Pos Pro</h2><p>${num}</p><p>${total} جنيه</p>`);
+  w.print();
 }
 </script>
 
