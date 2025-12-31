@@ -5,7 +5,7 @@
 <title>Pos Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase -->
+<!-- Firebase CDN (صحيح للويب المباشر) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -26,7 +26,7 @@ hr{margin:15px 0}
 
 <header>📊 Pos Pro – برنامج محاسبي سحابي</header>
 
-<!-- AUTH -->
+<!-- تسجيل الدخول -->
 <div class="box" id="authBox">
 <h3>تسجيل الدخول</h3>
 <input id="email" placeholder="البريد الإلكتروني">
@@ -36,7 +36,7 @@ hr{margin:15px 0}
 <p id="authMsg"></p>
 </div>
 
-<!-- APP -->
+<!-- التطبيق -->
 <div class="hidden" id="appBox">
 
 <div class="box">
@@ -44,14 +44,12 @@ hr{margin:15px 0}
 <button class="red" onclick="logout()">تسجيل خروج</button>
 </div>
 
-<!-- INVOICE -->
 <div class="box">
 <h4>🧾 فاتورة بيع</h4>
 <input id="invoiceTotal" type="number" placeholder="إجمالي الفاتورة">
 <button class="primary" onclick="saveInvoice()">حفظ الفاتورة</button>
 </div>
 
-<!-- EXPENSE -->
 <div class="box">
 <h4>💸 مصروف</h4>
 <input id="expenseAmount" type="number" placeholder="المبلغ">
@@ -59,13 +57,11 @@ hr{margin:15px 0}
 <button class="primary" onclick="saveExpense()">حفظ المصروف</button>
 </div>
 
-<!-- INVOICES LIST -->
 <div class="box">
 <h4>📄 الفواتير</h4>
 <div id="invoiceList"></div>
 </div>
 
-<!-- REPORTS -->
 <div class="box">
 <h4>📊 التقارير</h4>
 <button onclick="generateReport()">عرض التقرير</button>
@@ -76,17 +72,21 @@ hr{margin:15px 0}
 </div>
 
 <script>
-/* Firebase Config (غيّرها) */
-const firebaseConfig={
-  apiKey:"YOUR_API_KEY",
-  authDomain:"YOUR_PROJECT.firebaseapp.com",
-  projectId:"YOUR_PROJECT_ID"
+/* 🔥 Firebase Config (مدمج من بياناتك) */
+const firebaseConfig = {
+  apiKey: "AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
+  authDomain: "pos-pro-996f0.firebaseapp.com",
+  projectId: "pos-pro-996f0",
+  storageBucket: "pos-pro-996f0.firebasestorage.app",
+  messagingSenderId: "591451935128",
+  appId: "1:591451935128:web:683495139e62fb9b1e1bed"
 };
+
 firebase.initializeApp(firebaseConfig);
 
-const auth=firebase.auth();
-const db=firebase.firestore();
-let currentUser=null;
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser = null;
 
 /* AUTH */
 auth.onAuthStateChanged(user=>{
@@ -114,7 +114,7 @@ function logout(){
   location.reload();
 }
 
-/* SAVE INVOICE */
+/* INVOICE */
 function saveInvoice(){
   const total=+invoiceTotal.value;
   if(!total) return;
@@ -131,7 +131,7 @@ function saveInvoice(){
   });
 }
 
-/* SAVE EXPENSE */
+/* EXPENSE */
 function saveExpense(){
   const amount=+expenseAmount.value;
   if(!amount) return;
