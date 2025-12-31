@@ -9,117 +9,108 @@
 <style>
 body{font-family:Tahoma;margin:0;background:#f4f6f8}
 header{background:#0d6efd;color:#fff;padding:15px;text-align:center}
-nav{display:flex;background:#fff;border-bottom:1px solid #ddd}
-nav button{flex:1;padding:10px;border:none;background:none}
-nav button.active{background:#0d6efd;color:#fff}
 .box{background:#fff;margin:15px;padding:15px;border-radius:6px}
-input,select,button{width:100%;padding:10px;margin-top:8px}
+input,button,select{width:100%;padding:10px;margin-top:8px}
 button{background:#0d6efd;color:#fff;border:none}
 .hidden{display:none}
-
 .overlay{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,.8);color:#fff;
-display:flex;align-items:center;justify-content:center;
-text-align:center;z-index:9999
+ position:fixed;top:0;left:0;width:100%;height:100%;
+ background:rgba(0,0,0,.85);color:#fff;
+ display:flex;align-items:center;justify-content:center;
+ text-align:center;z-index:999
 }
 </style>
 </head>
+
 <body>
 
 <header>📊 Pos Pro</header>
 
-<!-- تسجيل -->
-<div id="authBox" class="box">
-<h3>تسجيل الدخول / حساب جديد</h3>
+<!-- LOGIN -->
+<div id="loginBox" class="box">
+<h3>تسجيل الدخول</h3>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
 <button onclick="login()">دخول</button>
-<button onclick="register()">تسجيل جديد</button>
+<button onclick="register()">إنشاء حساب</button>
 <p id="msg"></p>
 </div>
 
-<!-- النظام -->
+<!-- APP -->
 <div id="app" class="hidden">
 
-<nav>
-<button class="active" onclick="show('sales',this)">المبيعات</button>
-<button onclick="show('products',this)">المخزون</button>
-<button onclick="show('customers',this)">العملاء</button>
-<button onclick="show('reports',this)">التقارير</button>
-<button onclick="logout()">خروج</button>
-</nav>
-
-<div id="sales" class="box">
-<h3>فاتورة بيع</h3>
-<select id="saleProduct"></select>
-<input id="saleQty" type="number" value="1">
-<button onclick="addSale()">إضافة</button>
-<div id="invoice"></div>
-<b>الإجمالي: <span id="total">0</span></b>
-<button onclick="saveInvoice()">حفظ الفاتورة</button>
+<div class="box">
+<b id="userEmail"></b><br>
+<b id="subStatus"></b>
+<button onclick="logout()">تسجيل خروج</button>
 </div>
 
-<div id="products" class="box hidden">
+<div class="box">
+<h3>مبيعات</h3>
+<input id="saleName" placeholder="اسم المنتج">
+<input id="saleQty" type="number" placeholder="الكمية">
+<input id="salePrice" type="number" placeholder="السعر">
+<button onclick="addSale()">إضافة بيع</button>
+<div id="salesList"></div>
+</div>
+
+<div class="box">
 <h3>المخزون</h3>
-<input id="pName" placeholder="اسم الصنف">
-<input id="pPrice" type="number" placeholder="السعر">
-<input id="pQty" type="number" placeholder="الكمية">
-<button onclick="addProduct()">إضافة</button>
-<div id="productList"></div>
+<div id="stockList"></div>
 </div>
 
-<div id="customers" class="box hidden">
+<div class="box">
 <h3>العملاء</h3>
-<input id="cName" placeholder="اسم العميل">
-<button onclick="addCustomer()">إضافة</button>
-<div id="customerList"></div>
+<input id="clientName" placeholder="اسم العميل">
+<button onclick="addClient()">إضافة عميل</button>
+<div id="clientList"></div>
 </div>
 
-<div id="reports" class="box hidden">
+<div class="box">
 <h3>التقارير</h3>
-<p>إجمالي المبيعات: <b id="salesTotal">0</b></p>
+<div id="reports"></div>
 </div>
 
 </div>
 
-<!-- انتهاء الاشتراك -->
+<!-- EXPIRED -->
 <div id="expired" class="overlay hidden">
 <div>
-<h2>انتهت فترة التجربة</h2>
+<h2>انتهت فترة الاستخدام</h2>
 <p>برجاء تجديد الاشتراك</p>
-<a style="color:#25d366;font-size:20px"
-href="https://wa.me/201019936233?text=أرغب في تجديد الاشتراك في Pos Pro">
-تواصل واتساب
-</a>
+<a style="color:#25d366;font-size:22px"
+href="https://wa.me/201019936233?text=مرحبًا، أريد تجديد الاشتراك في Pos Pro">
+تواصل عبر واتساب</a>
 </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
 firebase.initializeApp({
- apiKey:"AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQ0",
- authDomain:"pos-pro-996f0.firebaseapp.com",
- projectId:"pos-pro-996f0"
+ apiKey: "AIzaSyBZwWxWIIE0exAPoL9P8pbmp19gnBFxQq0",
+ authDomain: "pos-pro-996f0.firebaseapp.com",
+ projectId: "pos-pro-996f0"
 });
 
 const auth=firebase.auth();
 const db=firebase.firestore();
 
-let products=[],invoice=[],customers=[],sales=0;
+let sales=[],stock={},clients=[];
 
 function register(){
  auth.createUserWithEmailAndPassword(email.value,password.value)
  .then(r=>{
-  const d=new Date();d.setDate(d.getDate()+14);
+  let d=new Date();d.setDate(d.getDate()+14);
   return db.collection("users").doc(r.user.uid).set({
-   trialEnds:d,active:true
+   email:r.user.email,
+   subscription:"trial",
+   trialEndsAt:d
   });
- }).catch(e=>msg.innerText=e.message);
+ })
+ .catch(e=>msg.innerText=e.message);
 }
 
 function login(){
@@ -130,54 +121,37 @@ function login(){
 function logout(){auth.signOut();}
 
 auth.onAuthStateChanged(u=>{
- if(!u){authBox.classList.remove("hidden");app.classList.add("hidden");return;}
- authBox.classList.add("hidden");app.classList.remove("hidden");
+ if(!u){loginBox.classList.remove("hidden");app.classList.add("hidden");return;}
+ userEmail.innerText=u.email;
+ loginBox.classList.add("hidden");
+ app.classList.remove("hidden");
+
  db.collection("users").doc(u.uid).get().then(s=>{
-  if(s.exists){
-   const d=s.data().trialEnds.toDate();
-   if(new Date()>d){expired.classList.remove("hidden");}
+  let d=s.data();
+  if(d.subscription==="active" || d.trialEndsAt.toDate()>new Date()){
+   subStatus.innerText="الاشتراك نشط";
+  }else{
+   expired.classList.remove("hidden");
   }
  });
 });
 
-function show(id,b){
- document.querySelectorAll(".box").forEach(x=>x.classList.add("hidden"));
- document.getElementById(id).classList.remove("hidden");
- document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
- b.classList.add("active");
-}
-
-function addProduct(){
- products.push({name:pName.value,price:+pPrice.value,qty:+pQty.value});
- renderProducts();loadProducts();
-}
-
-function renderProducts(){
- productList.innerHTML="";
- products.forEach(p=>productList.innerHTML+=`<div>${p.name} (${p.qty})</div>`);
-}
-
-function loadProducts(){
- saleProduct.innerHTML="";
- products.forEach((p,i)=>saleProduct.innerHTML+=`<option value="${i}">${p.name}</option>`);
-}
-
 function addSale(){
- const p=products[saleProduct.value];
- const q=+saleQty.value;
- invoice.push({name:p.name,total:p.price*q});
- total.innerText=invoice.reduce((a,b)=>a+b.total,0);
+ sales.push({name:saleName.value,qty:+saleQty.value,price:+salePrice.value});
+ stock[saleName.value]=(stock[saleName.value]||0)-saleQty.value;
+ render();
 }
 
-function saveInvoice(){
- sales+=+total.innerText;
- salesTotal.innerText=sales;
- invoice=[];total.innerText=0;
+function addClient(){
+ clients.push(clientName.value);
+ render();
 }
 
-function addCustomer(){
- customers.push(cName.value);
- customerList.innerHTML+=`<div>${cName.value}</div>`;
+function render(){
+ salesList.innerHTML=sales.map(s=>`${s.name} - ${s.qty} × ${s.price}`).join("<br>");
+ stockList.innerHTML=Object.keys(stock).map(k=>`${k} : ${stock[k]}`).join("<br>");
+ clientList.innerHTML=clients.join("<br>");
+ reports.innerHTML=`إجمالي المبيعات: ${sales.length}`;
 }
 </script>
 
